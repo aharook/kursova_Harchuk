@@ -15,7 +15,7 @@ class Subject{
     std::vector<int> assessments;
 public:
 
-    Subject(std::string& Name,std::string& link_id,int semester,bool IsmultiSemestr, std::vector<int>& assessments = {} )
+    Subject(const std::string& Name,const std::string& link_id,int semester,bool IsmultiSemestr, const std::vector<int>& assessments = {} )
     : Name(Name), link_id(link_id), semester(semester), IsmultiSemester(IsmultiSemester), assessments(assessments){}
 
     std::string Getname()const {return Name;}

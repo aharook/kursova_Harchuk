@@ -1,3 +1,6 @@
+#ifndef GRADES_H
+#define GRADES_H
+
 #include <iostream>
 #include <chrono>
 
@@ -7,13 +10,16 @@ enum class ScaleType {
     FivePoint,
     PassFail
 };
+
 struct Date {
     std::chrono::system_clock::time_point value; 
+    
     static Date now() {
         return {std::chrono::system_clock::now()};
     }
 };
-    class Grade {
+
+class Grade {
 private:
     int value;
     ScaleType scale;
@@ -27,3 +33,5 @@ public:
     ScaleType getScale() const { return scale; }
     Date getDate() const { return date; }
 };
+
+#endif // GRADES_H
