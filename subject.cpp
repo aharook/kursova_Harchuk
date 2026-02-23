@@ -3,15 +3,10 @@
 #include <vector>
 
 class Subject{
-
     std::string Name;
-
     std::string link_id;
-
     int semester;
-
     bool IsmultiSemester;
-
     std::vector<int> assessments;
 public:
 
@@ -19,13 +14,10 @@ public:
     : Name(Name), link_id(link_id), semester(semester), IsmultiSemester(IsmultiSemester), assessments(assessments){}
 
     std::string Getname()const {return Name;}
-
     std::string Genlink_id()const{return link_id;}
-
     int Getsemestr()const{return semester;}
-
     std::vector<int> GetAssessments()const{return assessments;}
-
+    
     void SetName(const std::string& newName)
     {
         Name = newName;
