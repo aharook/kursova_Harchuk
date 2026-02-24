@@ -1,73 +1,65 @@
-#include <iostream>
-#include <string>
-#include <vector>
-#include <chrono>
-#include <iomanip>
-#include <sstream> 
-#include "Grades.h"
+#include "assessments.h"
 
 
 std::chrono::system_clock::time_point parseDeadline(const std::string& datetime_str) {
+    if (datetime_str.empty()) {
+        return std::chrono::time_point<std::chrono::system_clock>::max();
+    }
     std::tm tm = {};
     std::istringstream ss(datetime_str);
-    
-    ss >> std::get_time(&tm, "  %d.%m.%Y");
+
+    ss >> std::get_time(&tm, "%d.%m.%Y %H:%M");
+    if (ss.fail()) {
+        return std::chrono::system_clock::from_time_t(0);
+    }
     std::time_t time = std::mktime(&tm);
     return std::chrono::system_clock::from_time_t(time);
 }
 
-enum class AssessmentType {
-    EXAM,
-    COURSEWORK,
-    PRACTICE,
-    REGULAR
-};
 
-class assessments {
-    AssessmentType Type;
-    double maxPoints;
-    
-    std::chrono::system_clock::time_point deadline; 
-    
-    bool IsBlocker;
-    std::vector<Grade*> Grades;
+Assessments::Assessments(AssessmentType Type, int maxPoints, std::chrono::system_clock::time_point deadline, bool Isblocker, const std::vector<Grade*> Grades)
+    : Type(Type), maxPoints(maxPoints), deadline(deadline), IsBlocker(Isblocker), Grades(Grades) {}
 
-public:
-    assessments(AssessmentType Type, double maxPoints, std::chrono::system_clock::time_point deadline, bool Isblocker, const std::vector<Grade*> Grades = {} )
-    : Type(Type), maxPoints(maxPoints), deadline(deadline), IsBlocker(Isblocker), Grades(Grades){}
 
-    AssessmentType getType() const {return Type;}
-    double getMaxPoints() const {return maxPoints;}
-    bool getIsBlocker() const {return IsBlocker;}
-    std::vector<Grade*> getGrades() const {return Grades;}
-    std::chrono::system_clock::time_point getDeadline() const { return deadline; }
+AssessmentType Assessments::getType() const { return Type; }
+int Assessments::getMaxPoints() const { return maxPoints; }
+bool Assessments::getIsBlocker() const { return IsBlocker; }
+std::vector<Grade*> Assessments::getGrades() const { return Grades; }
+std::chrono::system_clock::time_point Assessments::getDeadline() const { return deadline; }
 
-    void addGrade(Grade* newGrade) {
-        Grades.push_back(newGrade);
-    }
 
-    bool isOverdue() const {
-    auto now = std::chrono::system_clock::now();
-    return now > deadline; 
-
-    
+void Assessments::addGrade(Grade* newGrade) {
+    Grades.push_back(newGrade);
 }
-};
-class AssessmentFactory {
-public:
 
-    static assessments* createExam(double maxPoints, const std::string& deadline_str) {
-        auto deadline = parseDeadline(deadline_str);
-        return new assessments(AssessmentType::EXAM, maxPoints, deadline, true); 
-    }
+bool Assessments::isOverdue() const {
+    auto now = std::chrono::system_clock::now();
+    return now > deadline;
+}
 
-    static assessments* createCoursework(double maxPoints, const std::string& deadline_str) {
-        auto deadline = parseDeadline(deadline_str);
-        return new assessments(AssessmentType::COURSEWORK, maxPoints, deadline, true);
-    }
+double Assessments::getCurrentScore() const {
+    if (Grades.empty()) return 0.0;
+    return Grades.back()->getValue(); 
+}
 
-    static assessments* createRegular(double maxPoints, const std::string& deadline_str = "") {
-        auto deadline = parseDeadline(deadline_str);
-        return new assessments(AssessmentType::REGULAR, maxPoints, deadline, false);
-    }
-};
+bool Assessments::isPassed() const {
+    if (Grades.empty()) return false;
+    double passingThreshold = maxPoints * 0.6;
+    return getCurrentScore() >= passingThreshold;
+}
+
+Assessments* AssessmentFactory::createExam(int maxPoints, const std::string& deadline_str) {
+    return new Assessments(AssessmentType::EXAM, maxPoints, parseDeadline(deadline_str), true);
+}
+
+Assessments* AssessmentFactory::createCoursework(int maxPoints, const std::string& deadline_str) {
+    return new Assessments(AssessmentType::COURSEWORK, maxPoints, parseDeadline(deadline_str), true);
+}
+
+Assessments* AssessmentFactory::createPractice(int maxPoints, const std::string& deadline_str) {
+    return new Assessments(AssessmentType::PRACTICE, maxPoints, parseDeadline(deadline_str), false);
+}
+
+Assessments* AssessmentFactory::createRegular(int maxPoints, const std::string& deadline_str) {
+    return new Assessments(AssessmentType::REGULAR, maxPoints, parseDeadline(deadline_str), false);
+}
