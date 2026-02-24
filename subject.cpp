@@ -1,38 +1,42 @@
-#include <iostream>
-#include <string>
-#include <vector>
-#include "assessments.h"
+#include "subject.h"
 
-class Subject{
-    std::string Name;
-    std::string link_id;
-    int semester;
-    bool IsmultiSemester;
-    std::vector<Assessments*> assessments;
-public:
-    Subject(const std::string& Name, const std::string& link_id, int semester, bool IsmultiSemester, const std::vector<Assessments*> assessments_list = {} )
-    : Name(Name), link_id(link_id), semester(semester), IsmultiSemester(IsmultiSemester), assessments(assessments_list){}
+Subject::Subject(const std::string& Name, const std::string& link_id, int semester, bool IsmultiSemester, const std::vector<Assessments*>& assessments_list)
+    : Name(Name), link_id(link_id), semester(semester), IsmultiSemester(IsmultiSemester), assessments(assessments_list) {}
 
-    std::string Getname()const {return Name;}
-    std::string Genlink_id()const{return link_id;}
-    int Getsemestr()const{return semester;}
-    std::vector<Assessments*> GetAssessments()const{return assessments;}
-    
-    void SetName(const std::string& newName) { Name = newName; }
-    void setSemester(int newSemester) { if (newSemester > 0) semester = newSemester; }
-    void setIsMultiSemester(bool status) { IsmultiSemester = status; }
+void Subject::SetName(const std::string& newName) { 
+    Name = newName; 
+}
 
-    void addAssessment(Assessments* newassessmentGrade) {
-        assessments.push_back(newassessmentGrade);
+void Subject::setSemester(int newSemester) { 
+    if (newSemester > 0) {
+        semester = newSemester; 
     }
+}
 
-    bool hasPendingBlockers() const {
-        for (Assessments* task : assessments) {
-            if (task->getIsBlocker() == true && task->isPassed() == false) {
-                return true;
-            }
+void Subject::setIsMultiSemester(bool status) { 
+    IsmultiSemester = status; 
+}
+
+bool Subject::hasPendingBlockers() const {
+    for (Assessments* task : assessments) {
+        if (task->getIsBlocker() && !task->isPassed()) {
+            return true;
         }
-        return false; 
     }
-};
+    return false; 
+}
 
+void Subject::attach(IObserver* observer) {
+    observers.push_back(observer);
+}
+
+void Subject::notifyObservers() {
+    for (IObserver* obs : observers) {
+        obs->update(this);
+    }
+}
+
+void Subject::addAssessment(Assessments* newassessmentGrade) {
+    assessments.push_back(newassessmentGrade);
+    notifyObservers();
+}
