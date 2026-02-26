@@ -1,5 +1,5 @@
 #include "assessments.h"
-#include "averageCalculation.h" // Підключаємо калькулятор для роботи Фабрики
+#include "averageCalculation.h" 
 
 std::chrono::system_clock::time_point parseDeadline(const std::string& datetime_str) {
     if (datetime_str.empty()) {
@@ -13,11 +13,9 @@ std::chrono::system_clock::time_point parseDeadline(const std::string& datetime_
     return std::chrono::system_clock::from_time_t(std::mktime(&tm));
 }
 
-// Конструктор ініціалізує стратегію
 Assessments::Assessments(AssessmentType Type, ScaleType scale, int maxPoints, std::chrono::system_clock::time_point deadline, bool Isblocker, ICalculationStrategy* strategy, const std::vector<double>& Grades)
     : Type(Type), scale(scale), maxPoints(maxPoints), deadline(deadline), IsBlocker(Isblocker), strategy(strategy), Grades(Grades) {}
 
-// Деструктор прибирає стратегію з пам'яті
 Assessments::~Assessments() {
     delete strategy; 
 }
@@ -46,19 +44,19 @@ bool Assessments::isPassed() const {
 }
 
 
-Assessments* AssessmentFactory::createExam(int maxPoints, const std::string& deadline_str) {
+Assessments* AssessmentFactory::createExam(int maxPoints, ScaleType scale, const std::string& deadline_str) {
 
-    return new Assessments(AssessmentType::EXAM, ScaleType::HundredPoint, maxPoints, parseDeadline(deadline_str), true, new SingleGradeStrategy());
+    return new Assessments(AssessmentType::EXAM, scale, maxPoints, parseDeadline(deadline_str), true, new SingleGradeStrategy());
 }
 
-Assessments* AssessmentFactory::createCoursework(int maxPoints, const std::string& deadline_str) {
+Assessments* AssessmentFactory::createCoursework(int maxPoints,ScaleType scale, const std::string& deadline_str) {
 
-    return new Assessments(AssessmentType::COURSEWORK, ScaleType::HundredPoint, maxPoints, parseDeadline(deadline_str), true, new SingleGradeStrategy());
+    return new Assessments(AssessmentType::COURSEWORK, scale, maxPoints, parseDeadline(deadline_str), true, new SingleGradeStrategy());
 }
 
-Assessments* AssessmentFactory::createPractice(int maxPoints, const std::string& deadline_str) {
+Assessments* AssessmentFactory::createPractice(int maxPoints,ScaleType scale, const std::string& deadline_str) {
 
-    return new Assessments(AssessmentType::PRACTICE, ScaleType::HundredPoint, maxPoints, parseDeadline(deadline_str), false, new SingleGradeStrategy());
+    return new Assessments(AssessmentType::PRACTICE, scale, maxPoints, parseDeadline(deadline_str), false, new SingleGradeStrategy());
 }
 
 Assessments* AssessmentFactory::createRegular(int maxPoints, ScaleType scale, const std::string& deadline_str) {

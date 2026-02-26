@@ -32,6 +32,7 @@ public:
 
     void attach(IObserver* observer);
     void notifyObservers();
+
 };
 
 #endif

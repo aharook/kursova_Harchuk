@@ -18,7 +18,7 @@ double SingleGradeStrategy::calculate(const std::vector<double>& grades) {
 }
 
 ICalculationStrategy* StrategyFactory::createStrategy(ScaleType type) {
-    if (type == ScaleType::HundredPoint || type == ScaleType::Accumulative) {
+    if (type == ScaleType::Accumulative) {
         return new SumStrategy();
     }
     return new AverageStrategy();

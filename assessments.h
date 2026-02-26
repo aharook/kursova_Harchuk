@@ -11,7 +11,7 @@
 std::chrono::system_clock::time_point parseDeadline(const std::string& datetime_str);
 
 enum class AssessmentType { EXAM, COURSEWORK, PRACTICE, REGULAR };
-enum class ScaleType { HundredPoint, TwelvePoint, FivePoint, Accumulative }; 
+enum class ScaleType { TenPoint, TwelvePoint, FivePoint, Accumulative }; 
 
 
 class ICalculationStrategy; 
@@ -49,9 +49,9 @@ public:
 
 class AssessmentFactory {
 public:
-    static Assessments* createExam(int maxPoints, const std::string& deadline_str);
-    static Assessments* createCoursework(int maxPoints, const std::string& deadline_str);
-    static Assessments* createPractice(int maxPoints, const std::string& deadline_str = "");
+    static Assessments* createExam(int maxPoints,ScaleType scale, const std::string& deadline_str);
+    static Assessments* createCoursework(int maxPoints,ScaleType scale, const std::string& deadline_str);
+    static Assessments* createPractice(int maxPoints,ScaleType scale, const std::string& deadline_str = "");
     static Assessments* createRegular(int maxPoints, ScaleType scale, const std::string& deadline_str = "");
 };
 
