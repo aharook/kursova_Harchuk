@@ -13,7 +13,7 @@ std::chrono::system_clock::time_point parseDeadline(const std::string& datetime_
 enum class AssessmentType { EXAM, COURSEWORK, PRACTICE, REGULAR };
 enum class ScaleType { HundredPoint, TwelvePoint, FivePoint, Accumulative }; 
 
-// Кажемо компілятору, що такий клас існує (він у averCalculator.h)
+
 class ICalculationStrategy; 
 
 class Assessments {
@@ -25,11 +25,11 @@ private:
     bool IsBlocker;
     std::vector<double> Grades;
     
-    // Прямий вказівник на математичну логіку
+
     ICalculationStrategy* strategy; 
 
 public:
-    // Конструктор приймає стратегію
+
     Assessments(AssessmentType Type, ScaleType scale, int maxPoints, std::chrono::system_clock::time_point deadline, bool Isblocker, ICalculationStrategy* strategy, const std::vector<double>& Grades = {});
     
     ~Assessments();

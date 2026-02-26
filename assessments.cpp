@@ -32,10 +32,10 @@ std::chrono::system_clock::time_point Assessments::getDeadline() const { return 
 void Assessments::addGrade(double newGrade) { Grades.push_back(newGrade); }
 bool Assessments::isOverdue() const { return std::chrono::system_clock::now() > deadline; }
 
-// Обчислення балів
+
 double Assessments::getCurrentScore() const {
     if (Grades.empty() || !strategy) return 0.0;
-    // Завдання просить стратегію порахувати бали
+
     return strategy->calculate(Grades); 
 }
 
@@ -45,24 +45,23 @@ bool Assessments::isPassed() const {
     return getCurrentScore() >= passingThreshold;
 }
 
-// --- ФАБРИКА ---
 
 Assessments* AssessmentFactory::createExam(int maxPoints, const std::string& deadline_str) {
-    // Екзамен отримує стратегію "Єдина оцінка"
+
     return new Assessments(AssessmentType::EXAM, ScaleType::HundredPoint, maxPoints, parseDeadline(deadline_str), true, new SingleGradeStrategy());
 }
 
 Assessments* AssessmentFactory::createCoursework(int maxPoints, const std::string& deadline_str) {
-    // Курсова отримує стратегію "Єдина оцінка"
+
     return new Assessments(AssessmentType::COURSEWORK, ScaleType::HundredPoint, maxPoints, parseDeadline(deadline_str), true, new SingleGradeStrategy());
 }
 
 Assessments* AssessmentFactory::createPractice(int maxPoints, const std::string& deadline_str) {
-    // Практика отримує стратегію "Єдина оцінка"
+
     return new Assessments(AssessmentType::PRACTICE, ScaleType::HundredPoint, maxPoints, parseDeadline(deadline_str), false, new SingleGradeStrategy());
 }
 
 Assessments* AssessmentFactory::createRegular(int maxPoints, ScaleType scale, const std::string& deadline_str) {
-    // Регулярні завдання отримують стратегію з Фабрики Стратегій (Середнє або Сума)
+
     return new Assessments(AssessmentType::REGULAR, scale, maxPoints, parseDeadline(deadline_str), false, StrategyFactory::createStrategy(scale));
 }

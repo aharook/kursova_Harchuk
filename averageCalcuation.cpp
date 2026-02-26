@@ -14,7 +14,6 @@ double SumStrategy::calculate(const std::vector<double>& grades) {
 }
 
 double SingleGradeStrategy::calculate(const std::vector<double>& grades) {
-    // Просто повертаємо останню виставлену оцінку
     return grades.empty() ? 0.0 : grades.back();
 }
 
