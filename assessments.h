@@ -7,52 +7,52 @@
 #include <chrono>
 #include <iomanip>
 #include <sstream>
-#include "Grades.h"
 
-// Parse deadline string in format "DD.MM.YYYY"
 std::chrono::system_clock::time_point parseDeadline(const std::string& datetime_str);
 
-// Enum for assessment types
-enum class AssessmentType {
-    EXAM,
-    COURSEWORK,
-    PRACTICE,
-    REGULAR
-};
+enum class AssessmentType { EXAM, COURSEWORK, PRACTICE, REGULAR };
+enum class ScaleType { HundredPoint, TwelvePoint, FivePoint, Accumulative }; 
 
-// Main assessments class
+// Кажемо компілятору, що такий клас існує (він у averCalculator.h)
+class ICalculationStrategy; 
+
 class Assessments {
+private:
     AssessmentType Type;
+    ScaleType scale; 
     int maxPoints;
     std::chrono::system_clock::time_point deadline;
     bool IsBlocker;
-    std::vector<Grade*> Grades;
+    std::vector<double> Grades;
+    
+    // Прямий вказівник на математичну логіку
+    ICalculationStrategy* strategy; 
 
 public:
-    // Constructor
-    Assessments(AssessmentType Type, int maxPoints, std::chrono::system_clock::time_point deadline, bool Isblocker, const std::vector<Grade*> Grades = {});
+    // Конструктор приймає стратегію
+    Assessments(AssessmentType Type, ScaleType scale, int maxPoints, std::chrono::system_clock::time_point deadline, bool Isblocker, ICalculationStrategy* strategy, const std::vector<double>& Grades = {});
+    
+    ~Assessments();
 
-    // Getters
     AssessmentType getType() const;
+    ScaleType getScale() const; 
     int getMaxPoints() const;
     bool getIsBlocker() const;
-    std::vector<Grade*> getGrades() const;
+    std::vector<double> getGrades() const;
     std::chrono::system_clock::time_point getDeadline() const;
 
-    // Methods
-    void addGrade(Grade* newGrade);
+    void addGrade(double newGrade);
     bool isOverdue() const;
     double getCurrentScore() const;
     bool isPassed() const;
 };
 
-// Factory class for creating assessments
 class AssessmentFactory {
 public:
     static Assessments* createExam(int maxPoints, const std::string& deadline_str);
     static Assessments* createCoursework(int maxPoints, const std::string& deadline_str);
     static Assessments* createPractice(int maxPoints, const std::string& deadline_str = "");
-    static Assessments* createRegular(int maxPoints, const std::string& deadline_str = "");
+    static Assessments* createRegular(int maxPoints, ScaleType scale, const std::string& deadline_str = "");
 };
 
-#endif // ASSESSMENTS_H
+#endif

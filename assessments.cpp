@@ -1,5 +1,5 @@
 #include "assessments.h"
-
+#include "averageCalculation.h" // Підключаємо калькулятор для роботи Фабрики
 
 std::chrono::system_clock::time_point parseDeadline(const std::string& datetime_str) {
     if (datetime_str.empty()) {
@@ -9,37 +9,34 @@ std::chrono::system_clock::time_point parseDeadline(const std::string& datetime_
     std::istringstream ss(datetime_str);
 
     ss >> std::get_time(&tm, "%d.%m.%Y %H:%M");
-    if (ss.fail()) {
-        return std::chrono::system_clock::from_time_t(0);
-    }
-    std::time_t time = std::mktime(&tm);
-    return std::chrono::system_clock::from_time_t(time);
+    if (ss.fail()) return std::chrono::system_clock::from_time_t(0);
+    return std::chrono::system_clock::from_time_t(std::mktime(&tm));
 }
 
+// Конструктор ініціалізує стратегію
+Assessments::Assessments(AssessmentType Type, ScaleType scale, int maxPoints, std::chrono::system_clock::time_point deadline, bool Isblocker, ICalculationStrategy* strategy, const std::vector<double>& Grades)
+    : Type(Type), scale(scale), maxPoints(maxPoints), deadline(deadline), IsBlocker(Isblocker), strategy(strategy), Grades(Grades) {}
 
-Assessments::Assessments(AssessmentType Type, int maxPoints, std::chrono::system_clock::time_point deadline, bool Isblocker, const std::vector<Grade*> Grades)
-    : Type(Type), maxPoints(maxPoints), deadline(deadline), IsBlocker(Isblocker), Grades(Grades) {}
-
+// Деструктор прибирає стратегію з пам'яті
+Assessments::~Assessments() {
+    delete strategy; 
+}
 
 AssessmentType Assessments::getType() const { return Type; }
+ScaleType Assessments::getScale() const { return scale; }
 int Assessments::getMaxPoints() const { return maxPoints; }
 bool Assessments::getIsBlocker() const { return IsBlocker; }
-std::vector<Grade*> Assessments::getGrades() const { return Grades; }
+std::vector<double> Assessments::getGrades() const { return Grades; }
 std::chrono::system_clock::time_point Assessments::getDeadline() const { return deadline; }
 
+void Assessments::addGrade(double newGrade) { Grades.push_back(newGrade); }
+bool Assessments::isOverdue() const { return std::chrono::system_clock::now() > deadline; }
 
-void Assessments::addGrade(Grade* newGrade) {
-    Grades.push_back(newGrade);
-}
-
-bool Assessments::isOverdue() const {
-    auto now = std::chrono::system_clock::now();
-    return now > deadline;
-}
-
+// Обчислення балів
 double Assessments::getCurrentScore() const {
-    if (Grades.empty()) return 0.0;
-    return Grades.back()->getValue(); 
+    if (Grades.empty() || !strategy) return 0.0;
+    // Завдання просить стратегію порахувати бали
+    return strategy->calculate(Grades); 
 }
 
 bool Assessments::isPassed() const {
@@ -48,18 +45,24 @@ bool Assessments::isPassed() const {
     return getCurrentScore() >= passingThreshold;
 }
 
+// --- ФАБРИКА ---
+
 Assessments* AssessmentFactory::createExam(int maxPoints, const std::string& deadline_str) {
-    return new Assessments(AssessmentType::EXAM, maxPoints, parseDeadline(deadline_str), true);
+    // Екзамен отримує стратегію "Єдина оцінка"
+    return new Assessments(AssessmentType::EXAM, ScaleType::HundredPoint, maxPoints, parseDeadline(deadline_str), true, new SingleGradeStrategy());
 }
 
 Assessments* AssessmentFactory::createCoursework(int maxPoints, const std::string& deadline_str) {
-    return new Assessments(AssessmentType::COURSEWORK, maxPoints, parseDeadline(deadline_str), true);
+    // Курсова отримує стратегію "Єдина оцінка"
+    return new Assessments(AssessmentType::COURSEWORK, ScaleType::HundredPoint, maxPoints, parseDeadline(deadline_str), true, new SingleGradeStrategy());
 }
 
 Assessments* AssessmentFactory::createPractice(int maxPoints, const std::string& deadline_str) {
-    return new Assessments(AssessmentType::PRACTICE, maxPoints, parseDeadline(deadline_str), false);
+    // Практика отримує стратегію "Єдина оцінка"
+    return new Assessments(AssessmentType::PRACTICE, ScaleType::HundredPoint, maxPoints, parseDeadline(deadline_str), false, new SingleGradeStrategy());
 }
 
-Assessments* AssessmentFactory::createRegular(int maxPoints, const std::string& deadline_str) {
-    return new Assessments(AssessmentType::REGULAR, maxPoints, parseDeadline(deadline_str), false);
+Assessments* AssessmentFactory::createRegular(int maxPoints, ScaleType scale, const std::string& deadline_str) {
+    // Регулярні завдання отримують стратегію з Фабрики Стратегій (Середнє або Сума)
+    return new Assessments(AssessmentType::REGULAR, scale, maxPoints, parseDeadline(deadline_str), false, StrategyFactory::createStrategy(scale));
 }
