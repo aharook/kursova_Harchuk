@@ -5,7 +5,7 @@
 #include <map>
 #include <string>
 #include "subject.h"
-#include "averageCalculation.h"
+#include "averageCalculation.h" 
 
 class Gradebook {
 private:
@@ -23,17 +23,25 @@ public:
     std::map<std::string, double> getActualAverages() const {
         std::map<std::string, double> actualAverages;
         
-        AverageStrategy avgCalc; 
-
         for (const Subject* sub : subjects) {
-            std::vector<double> subjectScores;
+            std::vector<Assessments*> assessments = sub->GetAssessments();
+            
+            if (assessments.empty()) {
+                actualAverages[sub->Genlink_id()] = 0.0;
+                continue;
+            }
 
-            for (const Assessments* task : sub->GetAssessments()) {
+            std::vector<double> subjectScores;
+            for (const Assessments* task : assessments) {
                 subjectScores.push_back(task->getCurrentScore());
             }
 
-
-            actualAverages[sub->Genlink_id()] = avgCalc.calculate(subjectScores);
+            ScaleType scale = assessments.front()->getScale();
+            
+            ICalculationStrategy* strategy = StrategyFactory::createStrategy(scale);
+            actualAverages[sub->Genlink_id()] = strategy->calculate(subjectScores);
+            
+            delete strategy; 
         }
 
         return actualAverages;
