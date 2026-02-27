@@ -4,11 +4,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <chrono>
-#include <iomanip>
 #include <sstream>
 
-std::chrono::system_clock::time_point parseDeadline(const std::string& datetime_str);
+
 
 enum class AssessmentType { EXAM, COURSEWORK, PRACTICE, REGULAR };
 enum class ScaleType { TenPoint, TwelvePoint, FivePoint, Accumulative }; 
@@ -21,7 +19,7 @@ private:
     AssessmentType Type;
     ScaleType scale; 
     int maxPoints;
-    std::chrono::system_clock::time_point deadline;
+
     bool IsBlocker;
     std::vector<double> Grades;
     
@@ -30,7 +28,7 @@ private:
 
 public:
 
-    Assessments(AssessmentType Type, ScaleType scale, int maxPoints, std::chrono::system_clock::time_point deadline, bool Isblocker, ICalculationStrategy* strategy, const std::vector<double>& Grades = {});
+    Assessments(AssessmentType Type, ScaleType scale, int maxPoints, bool Isblocker, ICalculationStrategy* strategy, const std::vector<double>& Grades = {});
     
     ~Assessments();
 
@@ -39,7 +37,7 @@ public:
     int getMaxPoints() const;
     bool getIsBlocker() const;
     std::vector<double> getGrades() const;
-    std::chrono::system_clock::time_point getDeadline() const;
+
 
     void addGrade(double newGrade);
     bool isOverdue() const;
@@ -49,10 +47,10 @@ public:
 
 class AssessmentFactory {
 public:
-    static Assessments* createExam(int maxPoints,ScaleType scale, const std::string& deadline_str);
-    static Assessments* createCoursework(int maxPoints,ScaleType scale, const std::string& deadline_str);
-    static Assessments* createPractice(int maxPoints,ScaleType scale, const std::string& deadline_str = "");
-    static Assessments* createRegular(int maxPoints, ScaleType scale, const std::string& deadline_str = "");
+    static Assessments* createExam(int maxPoints,ScaleType scaler);
+    static Assessments* createCoursework(int maxPoints,ScaleType scale);
+    static Assessments* createPractice(int maxPoints,ScaleType scale);
+    static Assessments* createRegular(int maxPoints, ScaleType scale);
 };
 
 #endif
