@@ -1,7 +1,7 @@
 #include "subject.h"
 
-Subject::Subject(const std::string& Name, const std::string& link_id, int semester, bool IsmultiSemester, const std::vector<Assessments*>& assessments_list)
-    : Name(Name), link_id(link_id), semester(semester), IsmultiSemester(IsmultiSemester), assessments(assessments_list) {}
+Subject::Subject(const std::string& Name, const std::string& link_id, int semester, bool IsmultiSemester, const std::vector<Assessments*>& assessments)
+    : Name(Name), link_id(link_id), semester(semester), IsmultiSemester(IsmultiSemester), assessments(assessments) {}
 
 void Subject::SetName(const std::string& newName) { 
     Name = newName; 
@@ -39,4 +39,11 @@ void Subject::notifyObservers() {
 void Subject::addAssessment(Assessments* newassessmentGrade) {
     assessments.push_back(newassessmentGrade);
     notifyObservers();
+}
+
+void Subject::addGradeToTask(int taskIndex, double grade) {
+    if (taskIndex >= 0 && taskIndex < assessments.size()) {
+        assessments[taskIndex]->addGrade(grade);
+        notifyObservers();
+    }
 }

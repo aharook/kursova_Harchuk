@@ -14,9 +14,10 @@ private:
     bool IsmultiSemester;
     std::vector<Assessments*> assessments;
     std::vector<IObserver*> observers;
+    int priorityScore = 0; // Чистий пріоритет, ніякого UI
 
 public:
-    Subject(const std::string& Name, const std::string& link_id, int semester, bool IsmultiSemester, const std::vector<Assessments*>& assessments_list = {});
+    Subject(const std::string& Name, const std::string& link_id, int semester, bool IsmultiSemester, const std::vector<Assessments*>& assessments = {});
 
     std::string Getname() const { return Name; }
     std::string Genlink_id() const { return link_id; }
@@ -33,6 +34,10 @@ public:
     void attach(IObserver* observer);
     void notifyObservers();
 
+    void addGradeToTask(int taskIndex, double grade);
+
+    void setPriorityScore(int score) { priorityScore = score; }
+    int getPriorityScore() const { return priorityScore; }
 };
 
 #endif
