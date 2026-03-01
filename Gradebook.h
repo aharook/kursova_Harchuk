@@ -46,6 +46,16 @@ public:
 
         return actualAverages;
     }
+    ScaleType getSubjectScale(const std::string& target_link_id) const {
+    for (const Subject* sub : subjects) {
+        if (sub->Genlink_id() == target_link_id) {
+            std::vector<Assessments*> assessments = sub->GetAssessments();
+            if (!assessments.empty()) {
+                return assessments.front()->getScale();
+            }
+        }
+    }
+    }
 };
 
 #endif
