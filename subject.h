@@ -10,7 +10,6 @@ class Subject {
 private:
     std::string Name;
     std::string link_id;
-    int semester;
     bool IsmultiSemester;
     std::vector<Assessments*> assessments;
     std::vector<IObserver*> observers;
@@ -21,7 +20,6 @@ public:
 
     std::string Getname() const { return Name; }
     std::string Genlink_id() const { return link_id; }
-    int Getsemestr() const { return semester; }
     std::vector<Assessments*> GetAssessments() const { return assessments; }
     
     void SetName(const std::string& newName);

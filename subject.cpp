@@ -1,16 +1,10 @@
 #include "subject.h"
 
 Subject::Subject(const std::string& Name, const std::string& link_id, int semester, bool IsmultiSemester, const std::vector<Assessments*> assessments)
-    : Name(Name), link_id(link_id), semester(semester), IsmultiSemester(IsmultiSemester), assessments(assessments) {}
+    : Name(Name), link_id(link_id), IsmultiSemester(IsmultiSemester), assessments(assessments) {}
 
 void Subject::SetName(const std::string& newName) { 
     Name = newName; 
-}
-
-void Subject::setSemester(int newSemester) { 
-    if (newSemester > 0) {
-        semester = newSemester; 
-    }
 }
 
 void Subject::setIsMultiSemester(bool status) { 
