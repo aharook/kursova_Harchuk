@@ -46,16 +46,34 @@ public:
 
         return actualAverages;
     }
+
     ScaleType getSubjectScale(const std::string& target_link_id) const {
-    for (const Subject* sub : subjects) {
-        if (sub->Genlink_id() == target_link_id) {
-            std::vector<Assessments*> assessments = sub->GetAssessments();
-            if (!assessments.empty()) {
-                return assessments.front()->getScale();
+        for (const Subject* sub : subjects) {
+            if (sub->Genlink_id() == target_link_id) {
+                std::vector<Assessments*> assessments = sub->GetAssessments();
+                if (!assessments.empty()) {
+                    return assessments.front()->getScale();
+                }
             }
         }
+        // ДОДАНО: дефолтне повернення, якщо предмет не знайдено
+        return ScaleType::TwelvePoint; 
     }
+
+    bool hasPendingBlockers() const {
+        for (const Subject* sub : subjects) {
+            if (sub->hasPendingBlockers()) {
+                return true;
+            }
+        }
+        return false;
     }
+    std::vector<Subject*> extractAllSubjects() {
+        std::vector<Subject*> extracted = subjects; 
+        subjects.clear(); 
+        return extracted; 
+    }
+    
 };
 
 #endif

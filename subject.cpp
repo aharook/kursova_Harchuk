@@ -11,15 +11,6 @@ void Subject::setIsMultiSemester(bool status) {
     IsmultiSemester = status; 
 }
 
-bool Subject::hasPendingBlockers() const {
-    for (Assessments* task : assessments) {
-        if (task->getIsBlocker() && !task->isPassed()) {
-            return true;
-        }
-    }
-    return false; 
-}
-
 void Subject::attach(IObserver* observer) {
     observers.push_back(observer);
 }
@@ -40,4 +31,12 @@ void Subject::addGradeToTask(int taskIndex, double grade) {
         assessments[taskIndex]->addGrade(grade);
         notifyObservers();
     }
+}
+bool Subject::hasPendingBlockers() const {
+    for (Assessments* task : assessments) {
+        if (task->getIsBlocker() && !task->isPassed()) {
+            return true; 
+        }
+    }
+    return false; 
 }

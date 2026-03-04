@@ -19,7 +19,9 @@ public:
     Subject(const std::string& Name, const std::string& link_id, int semester, bool IsmultiSemester, const std::vector<Assessments*> assessments = {});
 
     std::string Getname() const { return Name; }
+
     std::string Genlink_id() const { return link_id; }
+    
     std::vector<Assessments*> GetAssessments() const { return assessments; }
     
     void SetName(const std::string& newName);
@@ -27,7 +29,6 @@ public:
     void setIsMultiSemester(bool status);
     
     void addAssessment(Assessments* newassessmentGrade);
-    bool hasPendingBlockers() const;
 
     void attach(IObserver* observer);
     void notifyObservers();
@@ -36,6 +37,7 @@ public:
 
     void setPriorityScore(int score) { priorityScore = score; }
     int getPriorityScore() const { return priorityScore; }
+    bool hasPendingBlockers() const {}
 };
 
 #endif

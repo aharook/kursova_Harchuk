@@ -4,7 +4,7 @@ double AverageStrategy::calculate(const std::vector<double>& grades) {
     if (grades.empty()) return 0.0;
     double sum = 0;
     for (double g : grades) sum += g;
-    return sum / grades.size();//22
+    return sum / grades.size();
 }
 
 double SumStrategy::calculate(const std::vector<double>& grades) {
