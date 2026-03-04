@@ -9,7 +9,7 @@
 class SemesterManager {
 private:
     std::vector<Subject*> archive;
-    int semester = 1; 
+    int semester = 1;
 
 public:
     ~SemesterManager() {
@@ -18,7 +18,6 @@ public:
         }
     }
 
-    // Перевірка, чи можна закрити семестр
     bool canEndSemester(Gradebook* gb) const {
         if (gb->hasPendingBlockers()) {
             return false;
@@ -26,8 +25,7 @@ public:
         return true; 
     }
 
-    bool transitionToNextSemester(Gradebook* gb, std::string& errorMessage) {
-        
+bool transitionToNextSemester(Gradebook* gb) {
         if (!canEndSemester(gb)) {
             return false; 
         }
@@ -35,21 +33,14 @@ public:
         std::vector<Subject*> currentSubjects = gb->extractAllSubjects();
 
         for (Subject* sub : currentSubjects) {
+
+            sub->setSemester(this->semester); 
+
             archive.push_back(sub);
         }
 
         semester++;
         return true;    
-    }
-
-    int getCurrentSemester() const {
-        return semester;
-    }
-
-    void loadSavedSemester(int savedSemester) {
-        if (savedSemester > 0) {
-            semester = savedSemester;
-        }
     }
 };
 

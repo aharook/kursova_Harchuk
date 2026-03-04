@@ -14,6 +14,7 @@ private:
     std::vector<Assessments*> assessments;
     std::vector<IObserver*> observers;
     int priorityScore = 0; 
+    int semester = 1;
 
 public:
     Subject(const std::string& Name, const std::string& link_id, int semester, bool IsmultiSemester, const std::vector<Assessments*> assessments = {});
@@ -38,6 +39,8 @@ public:
     void setPriorityScore(int score) { priorityScore = score; }
     int getPriorityScore() const { return priorityScore; }
     bool hasPendingBlockers() const {}
+    void setSemester(int s) {semester = s;}
+    int getSemester() const {return semester;}
 };
 
 #endif
