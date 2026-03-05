@@ -56,7 +56,6 @@ public:
                 }
             }
         }
-        // ДОДАНО: дефолтне повернення, якщо предмет не знайдено
         return ScaleType::TwelvePoint; 
     }
 

@@ -1,7 +1,7 @@
 #include "subject.h"
 
 Subject::Subject(const std::string& Name, const std::string& link_id, int semester, bool IsmultiSemester, const std::vector<Assessments*> assessments)
-    : Name(Name), link_id(link_id), IsmultiSemester(IsmultiSemester), assessments(assessments) {}
+    : Name(Name), link_id(link_id), IsmultiSemester(IsmultiSemester), assessments(assessments), semester(semester) {}
 
 void Subject::SetName(const std::string& newName) { 
     Name = newName; 
@@ -32,6 +32,7 @@ void Subject::addGradeToTask(int taskIndex, double grade) {
         notifyObservers();
     }
 }
+
 bool Subject::hasPendingBlockers() const {
     for (Assessments* task : assessments) {
         if (task->getIsBlocker() && !task->isPassed()) {
@@ -39,4 +40,16 @@ bool Subject::hasPendingBlockers() const {
         }
     }
     return false; 
+}
+
+int Subject::getPriorityScore() const { 
+    int totalPriority = 0;
+    for (const Assessments* task : assessments) {
+        totalPriority += task->getBasePriority();
+        
+        if (task->getIsBlocker() && !task->isPassed()) {
+            totalPriority += 1000; 
+        }
+    }
+    return totalPriority; 
 }
