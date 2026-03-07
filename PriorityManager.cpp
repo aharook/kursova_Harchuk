@@ -1,6 +1,6 @@
 #include <iostream>
 #include <algorithm>
-#include <map> // Додаємо map
+#include <map> 
 #include "IObservers.h"
 #include "subject.h"
 #include "assessments.h"
