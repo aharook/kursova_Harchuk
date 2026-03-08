@@ -22,10 +22,8 @@ public:
         for (const Subject* sub : archive) {
             
             std::string name = sub->Getname();
-            std::string id = sub->Genlink_id();
-            
+            std::string id = sub->getLinkId();
             int semester = sub->getSemester(); 
-            
             int tasksCount = sub->GetAssessments().size();
             std::string hasDebts = sub->hasPendingBlockers() ? "Так" : "Ні";
             file << name << ","

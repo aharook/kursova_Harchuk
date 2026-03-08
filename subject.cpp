@@ -1,7 +1,27 @@
 #include "subject.h"
 
-Subject::Subject(const std::string& Name, const std::string& link_id, int semester, bool IsmultiSemester, const std::vector<Assessments*> assessments)
-    : Name(Name), link_id(link_id), IsmultiSemester(IsmultiSemester), assessments(assessments), semester(semester) {}
+
+std::string Subject::generateLinkId(const std::string& name) {
+    std::hash<std::string> hasher;
+    return std::to_string(hasher(name));
+}
+
+Subject::Subject(const std::string& Name, int semester, bool IsmultiSemester, const std::vector<Assessments*> assessments)
+    : Name(Name), IsmultiSemester(IsmultiSemester), assessments(assessments), semester(semester) {
+    link_id = generateLinkId(Name);
+}
+
+Subject::Subject(const std::string& Name, int semester, bool IsmultiSemester, const std::string& existingId, const std::vector<Assessments*> assessments)
+    : Name(Name), IsmultiSemester(IsmultiSemester), link_id(existingId), assessments(assessments), semester(semester) {
+}
+
+
+Subject::~Subject() {
+    for (Assessments* task : assessments) {
+        delete task;
+    }
+    assessments.clear();
+}
 
 void Subject::SetName(const std::string& newName) { 
     Name = newName; 
@@ -41,7 +61,6 @@ bool Subject::hasPendingBlockers() const {
     }
     return false; 
 }
-
 int Subject::getPriorityScore() const { 
     int totalPriority = 0;
     for (const Assessments* task : assessments) {

@@ -22,6 +22,20 @@ double Assessments::getCurrentScore() const {
     return strategy->calculate(Grades); 
 }
 
+bool Assessments::isPassed() const {
+    if (Grades.empty()) return false;
+    
+    double score = getCurrentScore();
+    
+    switch (scale) {
+        case ScaleType::TenPoint: return score >= 6.0;
+        case ScaleType::TwelvePoint: return score >= 4.0;
+        case ScaleType::FivePoint: return score >= 3.0;
+        case ScaleType::Accumulative: return score >= 60.0;
+        default: return score > 0.0;
+    }
+}
+
 Assessments* AssessmentFactory::createExam(ScaleType scale) {
     return new Assessments(AssessmentType::EXAM, scale, 1000, true, new SingleGradeStrategy());
 }
@@ -35,5 +49,5 @@ Assessments* AssessmentFactory::createPractice(ScaleType scale) {
 }
 
 Assessments* AssessmentFactory::createRegular(ScaleType scale) {
-    return new Assessments(AssessmentType::REGULAR, scale, 0, false, StrategyFactory::createStrategy(scale));
+    return new Assessments(AssessmentType::REGULAR, scale, 50, false, new AverageStrategy());
 }

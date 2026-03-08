@@ -1,10 +1,8 @@
 #ifndef ASSESSMENTS_H
 #define ASSESSMENTS_H
 
-#include <iostream>
 #include <string>
 #include <vector>
-#include <sstream>
 
 enum class AssessmentType { EXAM, COURSEWORK, PRACTICE, REGULAR };
 enum class ScaleType { TenPoint, TwelvePoint, FivePoint, Accumulative }; 
@@ -24,6 +22,9 @@ private:
 public:
     Assessments(AssessmentType Type, ScaleType scale, int basePriority, bool Isblocker, ICalculationStrategy* strategy, const std::vector<double>& Grades = {});
     
+    Assessments(const Assessments&) = delete;
+    Assessments& operator=(const Assessments&) = delete;
+
     ~Assessments();
 
     AssessmentType getType() const;
@@ -34,7 +35,6 @@ public:
     bool hasGrades() const;
 
     void addGrade(double newGrade);
-    bool isOverdue() const;
     double getCurrentScore() const;
     bool isPassed() const;
 };

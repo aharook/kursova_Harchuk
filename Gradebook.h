@@ -27,7 +27,7 @@ public:
             std::vector<Assessments*> assessments = sub->GetAssessments();
             
             if (assessments.empty()) {
-                actualAverages[sub->Genlink_id()] = 0.0;
+                actualAverages[sub->getLinkId()] = 0.0;
                 continue;
             }
 
@@ -39,7 +39,7 @@ public:
             ScaleType scale = assessments.front()->getScale();
             
             ICalculationStrategy* strategy = StrategyFactory::createStrategy(scale);
-            actualAverages[sub->Genlink_id()] = strategy->calculate(subjectScores);
+            actualAverages[sub->getLinkId()] = strategy->calculate(subjectScores);
             
             delete strategy; 
         }
@@ -49,7 +49,7 @@ public:
 
     ScaleType getSubjectScale(const std::string& target_link_id) const {
         for (const Subject* sub : subjects) {
-            if (sub->Genlink_id() == target_link_id) {
+            if (sub->getLinkId() == target_link_id) {
                 std::vector<Assessments*> assessments = sub->GetAssessments();
                 if (!assessments.empty()) {
                     return assessments.front()->getScale();
@@ -67,12 +67,12 @@ public:
         }
         return false;
     }
+
     std::vector<Subject*> extractAllSubjects() {
         std::vector<Subject*> extracted = subjects; 
         subjects.clear(); 
         return extracted; 
     }
-    
 };
 
 #endif

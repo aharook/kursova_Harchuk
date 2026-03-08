@@ -5,6 +5,7 @@
 #include <vector>
 #include "assessments.h"
 #include "IObservers.h"
+#include <functional>
 
 class Subject {
 private:
@@ -14,12 +15,19 @@ private:
     std::vector<Assessments*> assessments;
     std::vector<IObserver*> observers;
     int semester = 1;
+    std::string generateLinkId(const std::string& name);
 
 public:
-    Subject(const std::string& Name, const std::string& link_id, int semester, bool IsmultiSemester, const std::vector<Assessments*> assessments = {});
+    Subject(const std::string& Name, int semester, bool IsmultiSemester, const std::vector<Assessments*> assessments = {});
+    
+
+    Subject(const std::string& Name, int semester, bool IsmultiSemester, const std::string& existingId, const std::vector<Assessments*> assessments = {});
+
+    ~Subject(); 
 
     std::string Getname() const { return Name; }
-    std::string Genlink_id() const { return link_id; }
+    std::string getLinkId() const { return link_id; } 
+    bool getIsMultiSemester() const { return IsmultiSemester; }
     std::vector<Assessments*> GetAssessments() const { return assessments; }
     
     void SetName(const std::string& newName);
@@ -34,6 +42,7 @@ public:
 
     void setSemester(int s) { semester = s; }
     int getSemester() const { return semester; }
+    
     bool hasPendingBlockers() const;
     int getPriorityScore() const; 
 };
