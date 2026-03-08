@@ -19,6 +19,8 @@ public:
     void addSubject(Subject* sub) {
         subjects.push_back(sub);
     }
+    
+    const std::vector<Subject*>& getSubjects() const { return subjects; }
 
     std::map<std::string, double> getActualAverages() const {
         std::map<std::string, double> actualAverages;
