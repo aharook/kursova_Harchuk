@@ -1,4 +1,5 @@
 #include "assessments.h"
+#include <map>
 #include "averageCalculation.h" 
 
 Assessments::Assessments(AssessmentType Type, ScaleType scale, int basePriority, bool Isblocker, ICalculationStrategy* strategy, const std::vector<double>& Grades)
@@ -27,13 +28,19 @@ bool Assessments::isPassed() const {
     
     double score = getCurrentScore();
     
-    switch (scale) {
-        case ScaleType::TenPoint: return score >= 6.0;
-        case ScaleType::TwelvePoint: return score >= 4.0;
-        case ScaleType::FivePoint: return score >= 3.0;
-        case ScaleType::Accumulative: return score >= 60.0;
-        default: return score > 0.0;
+    static const std::map<ScaleType, double> passingThresholds = {
+        {ScaleType::TenPoint, 6.0},
+        {ScaleType::TwelvePoint, 4.0},
+        {ScaleType::FivePoint, 3.0},
+        {ScaleType::Accumulative, 60.0}
+    };
+
+    auto it = passingThresholds.find(scale);
+    if (it != passingThresholds.end()) {
+        return score >= it->second;
     }
+    
+    return score > 0.0; 
 }
 
 Assessments* AssessmentFactory::createExam(ScaleType scale) {
@@ -49,5 +56,15 @@ Assessments* AssessmentFactory::createPractice(ScaleType scale) {
 }
 
 Assessments* AssessmentFactory::createRegular(ScaleType scale) {
-    return new Assessments(AssessmentType::REGULAR, scale, 50, false, new AverageStrategy());
+    ICalculationStrategy* currentStrategy = nullptr;
+
+    if (scale == ScaleType::Accumulative) {
+
+        currentStrategy = new SumStrategy(); 
+    } else {
+
+        currentStrategy = new AverageStrategy();
+    }
+
+    return new Assessments(AssessmentType::REGULAR, scale, 50, false, currentStrategy);
 }
