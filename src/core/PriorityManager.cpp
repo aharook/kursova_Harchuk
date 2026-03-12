@@ -3,6 +3,10 @@
 #include <algorithm>
 
 void PriorityManager::update(Subject* s) {
+    if (s == nullptr) {
+        return; 
+    }
+
     int finalPriority = 0;
     bool hasBadGrades = false;
 
@@ -12,8 +16,6 @@ void PriorityManager::update(Subject* s) {
         if (task->hasGrades()) {
             double currentScore = task->getCurrentScore();
             ScaleType scale = task->getScale();
-
-            // Перевірка на погані оцінки
             if ((scale == ScaleType::FivePoint && currentScore < 3.0) || 
                 (scale == ScaleType::TwelvePoint && currentScore < 4.0) || 
                 (scale == ScaleType::TenPoint && currentScore < 4.0) ||
@@ -31,5 +33,8 @@ void PriorityManager::update(Subject* s) {
 }
 
 int PriorityManager::getPriorityForSubject(Subject* s) {
+    if (s == nullptr) {
+        return 0;
+    }
     return subjectPriorities[s];
 }
