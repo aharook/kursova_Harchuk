@@ -40,20 +40,29 @@ private:
         }
     }
 public:
-    GradeConverter(const std::string& filename = "scales.csv") {
+    GradeConverter(const std::string& filename = "d:/Rcit/kursova_Harchuk/data/scales.csv") {
         loadMappings(filename);
     }
     double convert(double grade, ScaleType fromScale, ScaleType toScale) const {
         if (fromScale == toScale) return grade;
-        if (rules.empty()) return grade;
+        
+        if (rules.empty()){ return grade;} 
+
+
+        double closestDiff = 1000000.0;
+        double targetValue = 0.0;
 
         for (const auto& rule : rules) {
-            double threshold = rule.getValueForScale(fromScale);
-            if (grade >= threshold) {
-                return rule.getValueForScale(toScale);
+            double ruleFromVal = rule.getValueForScale(fromScale);
+            double diff = std::abs(ruleFromVal - grade);
+            
+            if (diff < closestDiff) {
+                closestDiff = diff;
+                targetValue = rule.getValueForScale(toScale);
             }
         }
-        return rules.back().getValueForScale(toScale);
+
+        return targetValue;
     }
 };
 

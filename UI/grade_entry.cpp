@@ -8,11 +8,10 @@
 
 namespace UI {
 
-// Фільтр: блокує введення БУДЬ-ЧОГО, крім цифр, пробілів та ком
 static int GradeInputFilter(ImGuiInputTextCallbackData* data) {
-    if (data->EventChar >= '0' && data->EventChar <= '9') return 0; // Дозволяємо цифри
-    if (data->EventChar == ' ' || data->EventChar == ',') return 0; // Дозволяємо роздільники
-    return 1; // Все інше - ігноруємо і не даємо ввести
+    if (data->EventChar >= '0' && data->EventChar <= '9') return 0;
+    if (data->EventChar == ' ' || data->EventChar == ',') return 0;
+    return 1;
 }
 
 void DrawAddGradeModal(AppState& state) {
@@ -21,7 +20,7 @@ void DrawAddGradeModal(AppState& state) {
         state.openGradeModal = false;
         memset(state.newGradesBuffer, 0, sizeof(state.newGradesBuffer));
         state.showGradeError = false;  
-        state.gradeErrorMessage = "";
+        strcpy(state.gradeErrorMessage, "");
     }
 
     if (ImGui::BeginPopupModal("Введення оцінки", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -36,12 +35,10 @@ void DrawAddGradeModal(AppState& state) {
         } else {
             ImGui::Text("Введіть бали через пробіл (максимум %d):", maxLimit);
         }
-        
-        // ДОДАНО ФІЛЬТР КЛАВІАТУРИ: ImGuiInputTextFlags_CallbackCharFilter
         ImGui::InputText("##grade", state.newGradesBuffer, IM_ARRAYSIZE(state.newGradesBuffer), ImGuiInputTextFlags_CallbackCharFilter, GradeInputFilter);
 
         if (state.showGradeError) {
-            ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "%s", state.gradeErrorMessage.c_str());
+            ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "%s", state.gradeErrorMessage);
         }
 
         ImGui::Separator();
@@ -58,24 +55,25 @@ void DrawAddGradeModal(AppState& state) {
 
             while (ss >> token) {
                 try {
-                    int g = std::stoi(token); // Намагаємось перетворити текст у число
+                    int g = std::stoi(token); 
                     if (g > maxLimit) exceedLimit = true;
                     parsedGrades.push_back(g);
                 } catch (...) {
-                    // Якщо число занадто велике і не влазить в int (напр. 999999999999)
+
                     isValid = false; 
                 }
             }
 
             if (!isValid || parsedGrades.empty()) {
                 state.showGradeError = true;
-                state.gradeErrorMessage = "Помилка: введіть коректні числа (не надто великі)!";
+                strcpy(state.gradeErrorMessage, "Помилка: введіть коректні числа (не надто великі)!");
             } else if (exceedLimit) {
                 state.showGradeError = true;
-                state.gradeErrorMessage = "Помилка: бал не може перевищувати " + std::to_string(maxLimit) + "!";
+                std::string msg = "Помилка: бал не може перевищувати " + std::to_string(maxLimit) + "!";
+                strcpy(state.gradeErrorMessage, msg.c_str());
             } else if (isSingleGrade && parsedGrades.size() > 1) {
                 state.showGradeError = true;
-                state.gradeErrorMessage = "Помилка: сюди можна ввести лише 1 оцінку!";
+                strcpy(state.gradeErrorMessage, "Помилка: сюди можна ввести лише 1 оцінку!");
             } else {
                 if (state.selectedAssessmentForGrade != nullptr) {
                     if (isSingleGrade) {
@@ -96,4 +94,4 @@ void DrawAddGradeModal(AppState& state) {
     }
 }
 
-} // namespace UI
+}

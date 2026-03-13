@@ -2,35 +2,37 @@
 #define APP_STATE_H
 
 #include <vector>
-#include "subject.h"
+#include <string>
+#include "AcademicSystem.h" 
 #include "PriorityManager.h"
-#include "assessments.h"
+#include "GradeConverter.h"
 
 struct AppState {
-    std::vector<Subject*> subjects; 
+    AcademicSystem system; 
     PriorityManager pm;
     
-    // ЗМІНА 1: Тепер ми тримаємо вказівник, тому сортування нічого не зламає!
-    Subject* selectedSubject = nullptr; 
+    GradeConverter uiConverter{"d:/Rcit/kursova_Harchuk/data/scales.csv"};
 
-    char newSubjName[128] = "";
-    int newSubjScale = 0; 
-    
-    bool hasRegular = true;
-    bool hasCoursework = false;
-    bool hasPractice = false;
-    bool hasExam = true;
-
-    // ... в самому кінці структури AppState ...
+    Subject* selectedSubject = nullptr;
     Assessments* selectedAssessmentForGrade = nullptr;
     
-    char newGradesBuffer[256] = ""; 
-    bool openGradeModal = false;
-    bool showGradeError = false;   
-    std::string gradeErrorMessage = ""; 
-    bool openEditSubjectModal = false;
-    char editSubjName[256] = "";
+    int selectedDisplayScale = 0; 
 
+    bool openEditSubjectModal = false;
+    bool openGradeModal = false;
+
+    char newSubjName[128] = "";       
+    char editSubjName[128] = "";      
+    char newGradesBuffer[256] = "";   
+
+    int newSubjScale = 0; 
+    bool hasRegular = false;
+    bool hasCoursework = false;
+    bool hasPractice = false;
+    bool hasExam = false;
+
+    bool showGradeError = false;
+    char gradeErrorMessage[256] = "";
 };
 
-#endif
+#endif 

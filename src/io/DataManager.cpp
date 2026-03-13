@@ -15,7 +15,7 @@ void DataManager::ensureDirectoryExists() const {
     }
 }
 
-// === ЗБЕРЕЖЕННЯ (СЕРІАЛІЗАЦІЯ) ===
+
 void DataManager::saveCurrentProgress(const Gradebook& gradebook, int currentSemester, const std::string& filename) const {
     ensureDirectoryExists();
     std::string fullPath = saveDirectory + "/" + filename;
@@ -57,7 +57,7 @@ void DataManager::saveCurrentProgress(const Gradebook& gradebook, int currentSem
     outFile.close();
 }
 
-// === ЗАВАНТАЖЕННЯ (ДЕСЕРІАЛІЗАЦІЯ З SOLID-ПІДХОДОМ) ===
+
 bool DataManager::loadCurrentProgress(Gradebook& gradebook, int& currentSemester, const std::string& filename) const {
     std::string fullPath = saveDirectory + "/" + filename;
     std::ifstream inFile(fullPath);
@@ -69,7 +69,7 @@ bool DataManager::loadCurrentProgress(Gradebook& gradebook, int& currentSemester
     size_t subjectCount;
     inFile >> subjectCount;
 
-    // Створюємо мапу функцій-фабрик (виконається 1 раз)
+
     static const std::map<AssessmentType, std::function<Assessments*(ScaleType)>> taskCreators = {
         {AssessmentType::EXAM, AssessmentFactory::createExam},
         {AssessmentType::COURSEWORK, AssessmentFactory::createCoursework},
@@ -102,7 +102,7 @@ bool DataManager::loadCurrentProgress(Gradebook& gradebook, int& currentSemester
 
             Assessments* newTask = nullptr;
             
-            // Шукаємо функцію створення в мапі замість switch
+
             auto it = taskCreators.find(type);
             if (it != taskCreators.end()) {
                 newTask = it->second(scale); 

@@ -3,7 +3,12 @@
 #include <string>
 #include <algorithm>
 #include <cctype>
+#include <cstring>
+#include <cstdio>
 #include "grade_entry.h"
+#include "subject.h"
+#include "assessments.h"
+#include "GradeConverter.h"
 
 namespace UI {
 
@@ -17,7 +22,7 @@ void DrawAddSubjectModal(AppState& state) {
         ImGui::Combo("##scale", &state.newSubjScale, scaleTypes, IM_ARRAYSIZE(scaleTypes));
 
         ImGui::Separator();
-        ImGui::Text("Складові оцінки (Асесменти):");
+        ImGui::Text("Складові оцінки:");
         ImGui::Checkbox("Звичайні завдання", &state.hasRegular);
         ImGui::Checkbox("Курсова робота", &state.hasCoursework);
         ImGui::Checkbox("Практика", &state.hasPractice);
@@ -25,12 +30,11 @@ void DrawAddSubjectModal(AppState& state) {
 
         ImGui::Separator();
 
-        // Захист: перевіряємо чи є в назві хоч один символ окрім пробілу
         bool hasName = false;
         for (size_t i = 0; i < strlen(state.newSubjName); i++) {
-            if (!std::isspace(static_cast<unsigned char>(state.newSubjName[i]))) { 
-                hasName = true; 
-                break; 
+            if (!std::isspace(static_cast<unsigned char>(state.newSubjName[i]))) {
+                hasName = true;
+                break;
             }
         }
 
@@ -38,14 +42,14 @@ void DrawAddSubjectModal(AppState& state) {
         bool canSave = hasAnyAssessment && hasName;
 
         if (!canSave) {
-            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Введіть реальну назву та оберіть хоча б 1 тип завдання!");
+            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Введіть реальну назву та оберіть тип завдання!");
         } else {
             ImGui::Text(" "); 
         }
 
         ImGui::BeginDisabled(!canSave);
         if (ImGui::Button("Зберегти", ImVec2(120, 0))) {
-            Subject* newSubj = new Subject(std::string(state.newSubjName), 1, false);
+            Subject* newSubj = new Subject(std::string(state.newSubjName), state.system.getCurrentSemester(), false);
 
             ScaleType scale = ScaleType::TwelvePoint;
             if (state.newSubjScale == 1) scale = ScaleType::Accumulative;
@@ -57,8 +61,8 @@ void DrawAddSubjectModal(AppState& state) {
             if (state.hasPractice)   newSubj->addAssessment(AssessmentFactory::createPractice(scale)); 
             if (state.hasExam)       newSubj->addAssessment(AssessmentFactory::createExam(scale));    
 
-            state.subjects.push_back(newSubj); 
-            state.selectedSubject = newSubj; // Одразу робимо новий предмет активним
+            state.system.addSubjectToCurrentSemester(newSubj);
+            state.selectedSubject = newSubj;
 
             memset(state.newSubjName, 0, sizeof(state.newSubjName)); 
             state.hasRegular = true; state.hasCoursework = false; state.hasPractice = false; state.hasExam = true;
@@ -84,7 +88,6 @@ void DrawEditSubjectModal(AppState& state) {
     if (ImGui::BeginPopupModal("Редагувати предмет", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::InputText("Нова назва", state.editSubjName, IM_ARRAYSIZE(state.editSubjName));
 
-        // Перевірка на те, що назва не складається лише з пробілів
         bool hasName = false;
         for (size_t i = 0; i < strlen(state.editSubjName); i++) {
             if (!std::isspace(static_cast<unsigned char>(state.editSubjName[i]))) { hasName = true; break; }
@@ -109,11 +112,13 @@ void DrawEditSubjectModal(AppState& state) {
 }
 
 void DrawDashboard(AppState& appState) {
-    // 1. ОНОВЛЮЄМО І СОРТУЄМО ПРЕДМЕТИ ПЕРЕД МАЛЮВАННЯМ
-    for (auto subj : appState.subjects) {
+
+    std::vector<Subject*> sortedSubjects = appState.system.getGradebook().getSubjects();
+    
+    for (auto subj : sortedSubjects) {
         appState.pm.update(subj);
     }
-    std::sort(appState.subjects.begin(), appState.subjects.end(), [&appState](Subject* a, Subject* b) {
+    std::sort(sortedSubjects.begin(), sortedSubjects.end(), [&appState](Subject* a, Subject* b) {
         return appState.pm.getPriorityForSubject(a) > appState.pm.getPriorityForSubject(b);
     });
 
@@ -121,36 +126,67 @@ void DrawDashboard(AppState& appState) {
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
     ImGui::Begin("Dashboard", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+    ImGui::BeginChild("TopPanel", ImVec2(0, 45), true);
+    
+    ImGui::Text("Поточний семестр: %d", appState.system.getCurrentSemester());
+    ImGui::SameLine(180);
+    
+    if (ImGui::Button("Завантажити", ImVec2(120, 30))) { appState.system.loadSystemState("save.dat"); }
+    ImGui::SameLine();
+    if (ImGui::Button("Зберегти", ImVec2(120, 30))) { appState.system.saveSystemState("save.dat"); }
+    
+
+    bool hasDebts = appState.system.getGradebook().hasPendingBlockers();
+
+    ImGui::SameLine(ImGui::GetContentRegionAvail().x - 240);
+    if (hasDebts) {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.1f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.2f, 0.2f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+    } else {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.6f, 0.1f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.7f, 0.2f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.3f, 0.8f, 0.3f, 1.0f));
+    }
+
+    if (ImGui::Button(hasDebts ? "Завершити семестр (Є борги!)" : "Завершити семестр", ImVec2(240, 30))) {
+        if (!hasDebts) {
+            appState.system.endSemester();
+            appState.selectedSubject = nullptr;
+        }
+    }
+    ImGui::PopStyleColor(3);
+
+    ImGui::EndChild();
+    ImGui::Spacing();
+
     ImGui::Columns(2, "MainLayout");
     ImGui::SetColumnWidth(0, 350.0f);
 
-    // ==========================================
-    // ЛІВА ПАНЕЛЬ (Список предметів)
-    // ==========================================
     ImGui::TextDisabled("СПИСОК ВАШИХ ПРЕДМЕТІВ");
     ImGui::Separator();
     
     ImGui::BeginChild("SubjectsList", ImVec2(0, ImGui::GetContentRegionAvail().y - 45), true);
-    for (size_t i = 0; i < appState.subjects.size(); ++i) {
-        Subject* subj = appState.subjects[i];
+    for (size_t i = 0; i < sortedSubjects.size(); ++i) {
+        Subject* subj = sortedSubjects[i];
         int prio = appState.pm.getPriorityForSubject(subj);
         bool isSelected = (appState.selectedSubject == subj);
 
         ImGui::PushID(static_cast<int>(i));
         
-        // Кольорове оформлення залежно від ситуації
         if (subj->hasPendingBlockers()) {
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f)); // Борг - Червоний
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
         } else if (prio >= 30) {
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.3f, 1.0f)); // Увага - Жовтий
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.3f, 1.0f));
         } else {
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 1.0f, 0.6f, 1.0f)); // Норма - Зелений
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 1.0f, 0.6f, 1.0f));
         }
 
         std::string itemLabel = subj->Getname() + "\nПріоритет: " + std::to_string(prio);
         
         if (ImGui::Selectable(itemLabel.c_str(), isSelected, 0, ImVec2(0, 42))) {
-            appState.selectedSubject = subj;
+            if (isSelected) appState.selectedSubject = nullptr;
+            else appState.selectedSubject = subj;
         }
 
         ImGui::PopStyleColor();
@@ -166,16 +202,13 @@ void DrawDashboard(AppState& appState) {
     
     ImGui::NextColumn();
 
-    // ==========================================
-    // ПРАВА ПАНЕЛЬ (Деталі предмета)
-    // ==========================================
-    ImGui::BeginChild("SubjectDetailsArea", ImVec2(0, 0), true); 
+    ImGui::BeginChild("SubjectDetailsArea", ImVec2(0, 0), true);
+    
     if (appState.selectedSubject != nullptr) {
         Subject* subj = appState.selectedSubject;
         
         ImGui::Text("Предмет: %s", subj->Getname().c_str());
         
-        // НОВІ КНОПКИ: РЕДАГУВАТИ ТА ВИДАЛИТИ ПРЕДМЕТ
         ImGui::SameLine(ImGui::GetContentRegionAvail().x - 280); 
         if (ImGui::Button("Редагувати назву", ImVec2(135, 0))) {
             appState.openEditSubjectModal = true;
@@ -184,26 +217,18 @@ void DrawDashboard(AppState& appState) {
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+
         if (ImGui::Button("Видалити предмет", ImVec2(135, 0))) {
-            auto it = std::find(appState.subjects.begin(), appState.subjects.end(), subj);
-            if (it != appState.subjects.end()) {
-                delete *it; // Видаляємо з пам'яті
-                appState.subjects.erase(it); // Видаляємо зі списку
-                appState.selectedSubject = nullptr; // Скидаємо вибір
-            }
+            appState.selectedSubject = nullptr; 
         }
         ImGui::PopStyleColor(2);
         
-        // Якщо предмет щойно видалили, припиняємо малювати цю панель далі
         if (appState.selectedSubject == nullptr) {
             ImGui::EndChild();
             ImGui::NextColumn();
-            
-            // Викликаємо модалки навіть якщо предмет видалено, щоб інтерфейс не зламався
             DrawAddSubjectModal(appState);
             DrawAddGradeModal(appState);
             DrawEditSubjectModal(appState);
-            
             ImGui::Columns(1);
             ImGui::End();
             return;
@@ -212,7 +237,7 @@ void DrawDashboard(AppState& appState) {
         ImGui::Separator();
         
         if (subj->hasPendingBlockers()) {
-            ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "УВАГА: Є нездана сесія/завдання (Блокувальник)!");
+            ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "УВАГА: Є нездана сесія/завдання");
         } else {
             ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Предмет закривається нормально.");
         }
@@ -236,7 +261,6 @@ void DrawDashboard(AppState& appState) {
                 Assessments* assessment = assessmentsList[i];
                 ImGui::TableNextRow();
 
-                // 1. Тип
                 ImGui::TableSetColumnIndex(0);
                 switch (assessment->getType()) {
                     case AssessmentType::EXAM: ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "Екзамен / Залік"); break;
@@ -245,7 +269,6 @@ void DrawDashboard(AppState& appState) {
                     case AssessmentType::REGULAR: default: ImGui::Text("Звичайне завдання"); break;
                 }
 
-                // 2. Всі оцінки
                 ImGui::TableSetColumnIndex(1);
                 auto grades = assessment->getGrades();
                 if (grades.empty()) {
@@ -259,11 +282,9 @@ void DrawDashboard(AppState& appState) {
                     ImGui::TextWrapped("%s", gradesStr.c_str());
                 }
 
-                // 3. Середній бал
                 ImGui::TableSetColumnIndex(2);
                 ImGui::Text("%.1f", assessment->getCurrentScore());
 
-                // 4. Статус блокувальника
                 ImGui::TableSetColumnIndex(3);
                 if (assessment->getIsBlocker()) {
                     if (assessment->isPassed()) ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Здано");
@@ -272,7 +293,6 @@ void DrawDashboard(AppState& appState) {
                     ImGui::Text("-");
                 }
 
-                // 5. Дія (Додано кнопку ОЧИСТИТИ)
                 ImGui::TableSetColumnIndex(4);
                 ImGui::PushID(static_cast<int>(i));
                 if (ImGui::Button("Оцінки")) {
@@ -289,7 +309,121 @@ void DrawDashboard(AppState& appState) {
         }
 
     } else {
-        ImGui::TextDisabled("Оберіть предмет зліва або створіть новий.");
+        ImGui::TextDisabled("ЗАГАЛЬНА СТАТИСТИКА ПО СЕМЕСТРУ (Оберіть предмет зліва для деталей)");
+        ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
+
+        ImGui::SeparatorText("Класична система оцінювання (з переведенням шкал)");
+        
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Показувати оцінки у:");
+        ImGui::SameLine();
+        const char* displayScales = "12-бальній шкалі\0 100-бальній\0 5-бальній шкалі\0 10-бальній шкалі\0";
+        ImGui::SetNextItemWidth(160);
+        ImGui::Combo("##displayScale", &appState.selectedDisplayScale, displayScales, 4);
+        ImGui::Spacing();
+        std::map<std::string, double> actualAverages = appState.system.getGradebook().getActualAverages();
+
+        if (ImGui::BeginTable("StandardSubjects", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+            ImGui::TableSetupColumn("Предмет");
+            ImGui::TableSetupColumn("Підсумкова оцінка");
+            ImGui::TableSetupColumn("Статус");
+            ImGui::TableHeadersRow();
+
+            for (auto* sub : sortedSubjects) {
+                ScaleType nativeScale = appState.system.getGradebook().getSubjectScale(sub->getLinkId());
+                if (nativeScale == ScaleType::Accumulative) continue;
+
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%s", sub->Getname().c_str());
+
+                ImGui::TableSetColumnIndex(1);
+                
+                double nativeScore = actualAverages[sub->getLinkId()];
+
+                ScaleType targetScale = ScaleType::TwelvePoint;
+                std::string scaleSuffix = " (12-бальна)";
+                
+                if (appState.selectedDisplayScale == 1) { targetScale = ScaleType::Accumulative; scaleSuffix = " (100-бальна)"; }
+                else if (appState.selectedDisplayScale == 2) { targetScale = ScaleType::FivePoint; scaleSuffix = " (5-бальна)"; }
+                else if (appState.selectedDisplayScale == 3) { targetScale = ScaleType::TenPoint; scaleSuffix = " (10-бальна)"; }
+
+                double convertedScore = appState.uiConverter.convert(nativeScore, nativeScale, targetScale);
+
+                ImGui::Text("%.1f%s", convertedScore, scaleSuffix.c_str());
+
+                ImGui::TableSetColumnIndex(2);
+                if (!sub->hasPendingBlockers()) {
+                    ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Здано");
+                } else {
+                    ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Борг");
+                }
+            }
+            ImGui::EndTable();
+        }
+
+        ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
+
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.0f, 1.0f));
+        ImGui::SeparatorText("Накопичувальна система");
+        ImGui::PopStyleColor();
+
+        if (ImGui::BeginTable("AccumulativeSubjects", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+            ImGui::TableSetupColumn("Предмет");
+            ImGui::TableSetupColumn("Накопичено балів");
+            ImGui::TableSetupColumn("Статус");
+            ImGui::TableHeadersRow();
+
+            for (auto* sub : sortedSubjects) {
+                ScaleType nativeScale = appState.system.getGradebook().getSubjectScale(sub->getLinkId());
+                if (nativeScale != ScaleType::Accumulative) continue;
+
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%s", sub->Getname().c_str());
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("%.1f / 100.0", actualAverages[sub->getLinkId()]);
+
+                ImGui::TableSetColumnIndex(2);
+                if (!sub->hasPendingBlockers()) ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Допущено");
+                else ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Борг");
+            }
+            ImGui::EndTable();
+        }
+
+        ImGui::Spacing(); ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        if (!sortedSubjects.empty()) {
+            if (hasDebts) {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f)); 
+                ImGui::Text("Семестр не закрито: у вас є борги або незавершені предмети!");
+                ImGui::PopStyleColor();
+            } else {
+                ScaleType targetScale = ScaleType::TwelvePoint;
+                if (appState.selectedDisplayScale == 1) targetScale = ScaleType::Accumulative;
+                else if (appState.selectedDisplayScale == 2) targetScale = ScaleType::FivePoint;
+                else if (appState.selectedDisplayScale == 3) targetScale = ScaleType::TenPoint;
+
+                double totalScore = 0.0;
+                for (auto* sub : sortedSubjects) {
+                    ScaleType nativeScale = appState.system.getGradebook().getSubjectScale(sub->getLinkId());
+                    double convertedScore = appState.uiConverter.convert(actualAverages[sub->getLinkId()], nativeScale, targetScale);
+                    totalScore += convertedScore;
+                }
+
+                double averageScore = totalScore / sortedSubjects.size();
+
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 1.0f, 0.2f, 1.0f)); 
+                ImGui::Text(" Семестр успішно закрито!");
+                ImGui::SetWindowFontScale(1.2f); 
+                ImGui::Text("Ваш загальний середній бал за семестр: %.2f", averageScore);
+                ImGui::SetWindowFontScale(1.0f); 
+                ImGui::PopStyleColor();
+            }
+        }
     }
     ImGui::EndChild();
 

@@ -45,6 +45,9 @@ public:
     
     bool hasPendingBlockers() const;
     int getPriorityScore() const; 
+    ScaleType getScale() const;
+    double getCurrentScore() const;
+    bool isPassed() const;
 };
 
 #endif
