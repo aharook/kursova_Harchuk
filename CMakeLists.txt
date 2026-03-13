@@ -1,33 +1,25 @@
 cmake_minimum_required(VERSION 3.15)
 project(AcademicSystem VERSION 1.0)
 
-# Встановлюємо стандарт C++
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# === ДОЗВОЛЯЄМО ТЕСТИ ===
 enable_testing()
 
-# 1. АВТОПОШУК ФАЙЛІВ (МАГІЯ)
-# Збираємо абсолютно всі .cpp файли з папок src та io і їх підпапок
 file(GLOB_RECURSE CORE_SOURCES 
     "src/*.cpp" 
     "io/*.cpp"
 )
 
-# Видаляємо main.cpp з цього списку, бо він має бути тільки в головній програмі (в тестах є свій main)
 list(REMOVE_ITEM CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 
-# 2. ГОЛОВНА ПРОГРАМА (AcademicSystem.exe)
 add_executable(${PROJECT_NAME} 
     src/main.cpp 
-    UI/UI.cpp      
+    UI/UI.cpp
+    UI/grade_entry.cpp
     ${CORE_SOURCES}
 )
 
-# ==========================================
-#             UI: GLFW + DEAR IMGUI
-# ==========================================
 find_package(OpenGL REQUIRED)
 
 include(FetchContent)
@@ -63,10 +55,8 @@ target_include_directories(ImGuiLib PUBLIC
 )
 target_link_libraries(ImGuiLib PUBLIC glfw OpenGL::GL)
 
-# ЛІНКУЄМО UI ДО ТВОЄЇ ОСНОВНОЇ ПРОГРАМИ
 target_link_libraries(${PROJECT_NAME} PRIVATE ImGuiLib)
 
-# Вказуємо шляхи до хедерів для головної програми
 target_include_directories(${PROJECT_NAME} PRIVATE 
     ${CMAKE_SOURCE_DIR}/src 
     ${CMAKE_SOURCE_DIR}/src/core 
@@ -75,9 +65,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/UI      
 )
 
-# ==========================================
-#             GOOGLE TEST БЛОК
-# ==========================================
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -86,12 +73,8 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# ==========================================
-#             ЮНІТ-ТЕСТИ (SystemTests.exe)
-# ==========================================
 file(GLOB TEST_SOURCES "tests/*.cpp")
 
-# Додаємо тестовий виконуваний файл (тести + всі наші класи без main.cpp)
 add_executable(SystemTests ${TEST_SOURCES} ${CORE_SOURCES})
 
 target_include_directories(SystemTests PRIVATE 

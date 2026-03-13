@@ -16,6 +16,20 @@ bool Assessments::getIsBlocker() const { return IsBlocker; }
 std::vector<double> Assessments::getGrades() const { return Grades; }
 bool Assessments::hasGrades() const { return !Grades.empty(); }
 
+double Assessments::getMaxAllowedGrade() const {
+    switch (scale) {
+        case ScaleType::TwelvePoint: return 12.0;
+        case ScaleType::TenPoint: return 10.0;
+        case ScaleType::FivePoint: return 5.0;
+        case ScaleType::Accumulative: return 100.0; 
+        default: return 100.0;
+    }
+}
+
+void Assessments::clearGrades() {
+    Grades.clear();
+}
+
 void Assessments::addGrade(double newGrade) { Grades.push_back(newGrade); }
 
 double Assessments::getCurrentScore() const {

@@ -34,6 +34,9 @@ public:
     std::vector<double> getGrades() const;
     bool hasGrades() const;
 
+    double getMaxAllowedGrade() const;
+    void clearGrades();
+
     void addGrade(double newGrade);
     double getCurrentScore() const;
     bool isPassed() const;

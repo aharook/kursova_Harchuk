@@ -9,7 +9,9 @@
 struct AppState {
     std::vector<Subject*> subjects; 
     PriorityManager pm;
-    int selectedSubjectIndex = -1;
+    
+    // ЗМІНА 1: Тепер ми тримаємо вказівник, тому сортування нічого не зламає!
+    Subject* selectedSubject = nullptr; 
 
     char newSubjName[128] = "";
     int newSubjScale = 0; 
@@ -17,11 +19,18 @@ struct AppState {
     bool hasRegular = true;
     bool hasCoursework = false;
     bool hasPractice = false;
-    bool hasExam = false;
+    bool hasExam = true;
 
+    // ... в самому кінці структури AppState ...
     Assessments* selectedAssessmentForGrade = nullptr;
-    float newGradeValue = 0.0f;
+    
+    char newGradesBuffer[256] = ""; 
     bool openGradeModal = false;
+    bool showGradeError = false;   
+    std::string gradeErrorMessage = ""; 
+    bool openEditSubjectModal = false;
+    char editSubjName[256] = "";
+
 };
 
 #endif

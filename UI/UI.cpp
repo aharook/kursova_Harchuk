@@ -1,6 +1,9 @@
-#include "UI.h"
+#include "ui.h"
 #include "imgui.h"
 #include <string>
+#include <algorithm>
+#include <cctype>
+#include "grade_entry.h"
 
 namespace UI {
 
@@ -22,12 +25,20 @@ void DrawAddSubjectModal(AppState& state) {
 
         ImGui::Separator();
 
+        // Захист: перевіряємо чи є в назві хоч один символ окрім пробілу
+        bool hasName = false;
+        for (size_t i = 0; i < strlen(state.newSubjName); i++) {
+            if (!std::isspace(static_cast<unsigned char>(state.newSubjName[i]))) { 
+                hasName = true; 
+                break; 
+            }
+        }
+
         bool hasAnyAssessment = state.hasRegular || state.hasCoursework || state.hasPractice || state.hasExam;
-        bool hasName = strlen(state.newSubjName) > 0;
         bool canSave = hasAnyAssessment && hasName;
 
         if (!canSave) {
-            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Введіть назву та оберіть хоча б 1 тип завдання!");
+            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Введіть реальну назву та оберіть хоча б 1 тип завдання!");
         } else {
             ImGui::Text(" "); 
         }
@@ -47,6 +58,7 @@ void DrawAddSubjectModal(AppState& state) {
             if (state.hasExam)       newSubj->addAssessment(AssessmentFactory::createExam(scale));    
 
             state.subjects.push_back(newSubj); 
+            state.selectedSubject = newSubj; // Одразу робимо новий предмет активним
 
             memset(state.newSubjName, 0, sizeof(state.newSubjName)); 
             state.hasRegular = true; state.hasCoursework = false; state.hasPractice = false; state.hasExam = true;
@@ -63,19 +75,31 @@ void DrawAddSubjectModal(AppState& state) {
     }
 }
 
-void DrawAddGradeModal(AppState& state) {
-    if (ImGui::BeginPopupModal("Введення оцінки", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text("Введіть отриманий бал:");
-        ImGui::InputFloat("##grade", &state.newGradeValue, 0.5f, 1.0f, "%.1f");
+void DrawEditSubjectModal(AppState& state) {
+    if (state.openEditSubjectModal) {
+        ImGui::OpenPopup("Редагувати предмет");
+        state.openEditSubjectModal = false;
+    }
+
+    if (ImGui::BeginPopupModal("Редагувати предмет", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::InputText("Нова назва", state.editSubjName, IM_ARRAYSIZE(state.editSubjName));
+
+        // Перевірка на те, що назва не складається лише з пробілів
+        bool hasName = false;
+        for (size_t i = 0; i < strlen(state.editSubjName); i++) {
+            if (!std::isspace(static_cast<unsigned char>(state.editSubjName[i]))) { hasName = true; break; }
+        }
 
         ImGui::Separator();
-
+        ImGui::BeginDisabled(!hasName);
         if (ImGui::Button("Зберегти", ImVec2(120, 0))) {
-            if (state.selectedAssessmentForGrade != nullptr) {
-                state.selectedAssessmentForGrade->addGrade(state.newGradeValue);
+            if (state.selectedSubject) {
+                state.selectedSubject->SetName(std::string(state.editSubjName));
             }
             ImGui::CloseCurrentPopup();
         }
+        ImGui::EndDisabled();
+
         ImGui::SameLine();
         if (ImGui::Button("Скасувати", ImVec2(120, 0))) {
             ImGui::CloseCurrentPopup();
@@ -85,6 +109,14 @@ void DrawAddGradeModal(AppState& state) {
 }
 
 void DrawDashboard(AppState& appState) {
+    // 1. ОНОВЛЮЄМО І СОРТУЄМО ПРЕДМЕТИ ПЕРЕД МАЛЮВАННЯМ
+    for (auto subj : appState.subjects) {
+        appState.pm.update(subj);
+    }
+    std::sort(appState.subjects.begin(), appState.subjects.end(), [&appState](Subject* a, Subject* b) {
+        return appState.pm.getPriorityForSubject(a) > appState.pm.getPriorityForSubject(b);
+    });
+
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
     ImGui::Begin("Dashboard", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
@@ -93,47 +125,90 @@ void DrawDashboard(AppState& appState) {
     ImGui::SetColumnWidth(0, 350.0f);
 
     // ==========================================
-    // ЛІВА ПАНЕЛЬ
+    // ЛІВА ПАНЕЛЬ (Список предметів)
     // ==========================================
-    ImGui::Text("Ваші дисципліни");
+    ImGui::TextDisabled("СПИСОК ВАШИХ ПРЕДМЕТІВ");
     ImGui::Separator();
     
-    ImGui::BeginChild("SubjectsList", ImVec2(0, ImGui::GetContentRegionAvail().y - 40), false);
-    for (int i = 0; i < appState.subjects.size(); ++i) {
-        appState.pm.update(appState.subjects[i]);
-        int prio = appState.pm.getPriorityForSubject(appState.subjects[i]);
+    ImGui::BeginChild("SubjectsList", ImVec2(0, ImGui::GetContentRegionAvail().y - 45), true);
+    for (size_t i = 0; i < appState.subjects.size(); ++i) {
+        Subject* subj = appState.subjects[i];
+        int prio = appState.pm.getPriorityForSubject(subj);
+        bool isSelected = (appState.selectedSubject == subj);
 
-        std::string itemLabel = appState.subjects[i]->Getname() + " (Пріоритет: " + std::to_string(prio) + ")";
+        ImGui::PushID(static_cast<int>(i));
         
-        if (appState.subjects[i]->hasPendingBlockers()) {
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
+        // Кольорове оформлення залежно від ситуації
+        if (subj->hasPendingBlockers()) {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f)); // Борг - Червоний
+        } else if (prio >= 30) {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.3f, 1.0f)); // Увага - Жовтий
+        } else {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 1.0f, 0.6f, 1.0f)); // Норма - Зелений
         }
 
-        if (ImGui::Selectable(itemLabel.c_str(), appState.selectedSubjectIndex == i)) {
-            appState.selectedSubjectIndex = i;
+        std::string itemLabel = subj->Getname() + "\nПріоритет: " + std::to_string(prio);
+        
+        if (ImGui::Selectable(itemLabel.c_str(), isSelected, 0, ImVec2(0, 42))) {
+            appState.selectedSubject = subj;
         }
 
-        if (appState.subjects[i]->hasPendingBlockers()) {
-            ImGui::PopStyleColor();
-        }
+        ImGui::PopStyleColor();
+        ImGui::Separator();
+        ImGui::PopID();
     }
     ImGui::EndChild();
 
     ImGui::Spacing();
-    if (ImGui::Button("+ Створити предмет", ImVec2(-1, 30))) {
+    if (ImGui::Button("+ Створити предмет", ImVec2(-1, 35))) {
         ImGui::OpenPopup("Додати предмет");
     }
     
     ImGui::NextColumn();
 
     // ==========================================
-    // ПРАВА ПАНЕЛЬ
+    // ПРАВА ПАНЕЛЬ (Деталі предмета)
     // ==========================================
-    ImGui::BeginChild("SubjectDetailsArea", ImVec2(0, 0), false);
-    if (appState.selectedSubjectIndex >= 0 && appState.selectedSubjectIndex < appState.subjects.size()) {
-        Subject* subj = appState.subjects[appState.selectedSubjectIndex];
+    ImGui::BeginChild("SubjectDetailsArea", ImVec2(0, 0), true); 
+    if (appState.selectedSubject != nullptr) {
+        Subject* subj = appState.selectedSubject;
         
         ImGui::Text("Предмет: %s", subj->Getname().c_str());
+        
+        // НОВІ КНОПКИ: РЕДАГУВАТИ ТА ВИДАЛИТИ ПРЕДМЕТ
+        ImGui::SameLine(ImGui::GetContentRegionAvail().x - 280); 
+        if (ImGui::Button("Редагувати назву", ImVec2(135, 0))) {
+            appState.openEditSubjectModal = true;
+            snprintf(appState.editSubjName, sizeof(appState.editSubjName), "%s", subj->Getname().c_str());
+        }
+        ImGui::SameLine();
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+        if (ImGui::Button("Видалити предмет", ImVec2(135, 0))) {
+            auto it = std::find(appState.subjects.begin(), appState.subjects.end(), subj);
+            if (it != appState.subjects.end()) {
+                delete *it; // Видаляємо з пам'яті
+                appState.subjects.erase(it); // Видаляємо зі списку
+                appState.selectedSubject = nullptr; // Скидаємо вибір
+            }
+        }
+        ImGui::PopStyleColor(2);
+        
+        // Якщо предмет щойно видалили, припиняємо малювати цю панель далі
+        if (appState.selectedSubject == nullptr) {
+            ImGui::EndChild();
+            ImGui::NextColumn();
+            
+            // Викликаємо модалки навіть якщо предмет видалено, щоб інтерфейс не зламався
+            DrawAddSubjectModal(appState);
+            DrawAddGradeModal(appState);
+            DrawEditSubjectModal(appState);
+            
+            ImGui::Columns(1);
+            ImGui::End();
+            return;
+        }
+
         ImGui::Separator();
         
         if (subj->hasPendingBlockers()) {
@@ -144,13 +219,14 @@ void DrawDashboard(AppState& appState) {
 
         ImGui::Spacing();
         ImGui::Separator();
-        ImGui::Text("Деталі оцінювання:");
+        ImGui::TextDisabled("ДЕТАЛІ ОЦІНЮВАННЯ:");
         ImGui::Spacing();
 
-        if (ImGui::BeginTable("AssessmentsTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+        if (ImGui::BeginTable("AssessmentsTable", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
             ImGui::TableSetupColumn("Тип завдання");
-            ImGui::TableSetupColumn("Середній бал");
-            ImGui::TableSetupColumn("Блокувальник?");
+            ImGui::TableSetupColumn("Всі оцінки");
+            ImGui::TableSetupColumn("Середній");
+            ImGui::TableSetupColumn("Статус");
             ImGui::TableSetupColumn("Дія");
             ImGui::TableHeadersRow();
 
@@ -160,65 +236,69 @@ void DrawDashboard(AppState& appState) {
                 Assessments* assessment = assessmentsList[i];
                 ImGui::TableNextRow();
 
+                // 1. Тип
                 ImGui::TableSetColumnIndex(0);
                 switch (assessment->getType()) {
-                    case AssessmentType::EXAM:
-                        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "Екзамен / Залік");
-                        break;
-                    case AssessmentType::COURSEWORK:
-                        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "Курсова робота");
-                        break;
-                    case AssessmentType::PRACTICE:
-                        ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Практика");
-                        break;
-                    case AssessmentType::REGULAR:
-                    default:
-                        ImGui::Text("Звичайне завдання");
-                        break;
+                    case AssessmentType::EXAM: ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "Екзамен / Залік"); break;
+                    case AssessmentType::COURSEWORK: ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "Курсова робота"); break;
+                    case AssessmentType::PRACTICE: ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Практика"); break;
+                    case AssessmentType::REGULAR: default: ImGui::Text("Звичайне завдання"); break;
                 }
 
+                // 2. Всі оцінки
                 ImGui::TableSetColumnIndex(1);
-                float avgGrade = assessment->getCurrentScore();
-                ImGui::Text("%.1f", avgGrade);
-
-                ImGui::TableSetColumnIndex(2);
-                if (assessment->getIsBlocker()) {
-                    if (assessment->isPassed()) {
-                        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Здано");
-                    } else {
-                        ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "БОРГ");
+                auto grades = assessment->getGrades();
+                if (grades.empty()) {
+                    ImGui::TextDisabled("Немає");
+                } else {
+                    std::string gradesStr = "";
+                    for (size_t g = 0; g < grades.size(); ++g) {
+                        gradesStr += std::to_string(static_cast<int>(grades[g]));
+                        if (g < grades.size() - 1) gradesStr += ", ";
                     }
+                    ImGui::TextWrapped("%s", gradesStr.c_str());
+                }
+
+                // 3. Середній бал
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%.1f", assessment->getCurrentScore());
+
+                // 4. Статус блокувальника
+                ImGui::TableSetColumnIndex(3);
+                if (assessment->getIsBlocker()) {
+                    if (assessment->isPassed()) ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Здано");
+                    else ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "БОРГ");
                 } else {
                     ImGui::Text("-");
                 }
 
-                ImGui::TableSetColumnIndex(3);
-                ImGui::PushID(i);
-                if (ImGui::Button("Додати оцінку")) {
+                // 5. Дія (Додано кнопку ОЧИСТИТИ)
+                ImGui::TableSetColumnIndex(4);
+                ImGui::PushID(static_cast<int>(i));
+                if (ImGui::Button("Оцінки")) {
                     appState.selectedAssessmentForGrade = assessment;
-                    appState.newGradeValue = 0.0f;
                     appState.openGradeModal = true;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Очистити")) {
+                    assessment->clearGrades();
                 }
                 ImGui::PopID();
             }
             ImGui::EndTable();
         }
-        
-        if (appState.openGradeModal) {
-            ImGui::OpenPopup("Введення оцінки");
-            appState.openGradeModal = false;
-        }
 
     } else {
-        ImGui::Text("Оберіть предмет зліва або створіть новий.");
+        ImGui::TextDisabled("Оберіть предмет зліва або створіть новий.");
     }
     ImGui::EndChild();
 
     DrawAddSubjectModal(appState);
     DrawAddGradeModal(appState);
+    DrawEditSubjectModal(appState);
 
     ImGui::Columns(1);
     ImGui::End();
 }
 
-} 
+}

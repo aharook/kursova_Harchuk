@@ -35,19 +35,14 @@ int main() {
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
-
-    // Створюємо стан програми
     AppState appState;
 
-    // ГОЛОВНИЙ ЦИКЛ ПРОГРАМИ
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-
-        // ВИКЛИКАЄМО НАШУ ФУНКЦІЮ МАЛЮВАННЯ З ui.cpp
         UI::DrawDashboard(appState);
 
         ImGui::Render();
@@ -59,8 +54,6 @@ int main() {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
     }
-
-    // Очищення пам'яті (те, що ми створювали через new)
     for (auto subj : appState.subjects) {
         delete subj;
     }
