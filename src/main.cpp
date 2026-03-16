@@ -32,7 +32,9 @@ int main() {
         std::cerr << "Не вдалося завантажити шрифт Arial" << std::endl;
     }
 
-    ImGui::StyleColorsDark();
+    // 1. Вмикаємо світлу тему інтерфейсу
+    ImGui::StyleColorsLight();
+
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
     AppState appState;
@@ -49,12 +51,14 @@ int main() {
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
-        glClearColor(0.15f, 0.16f, 0.21f, 1.00f);
+        
+        // 2. Встановлюємо чисто білий задній фон
+        glClearColor(1.00f, 1.00f, 1.00f, 1.00f);
         glClear(GL_COLOR_BUFFER_BIT);
+        
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
     }
-
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
