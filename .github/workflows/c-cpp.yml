@@ -1,37 +1,57 @@
-name: C++ CI Build & Test
+name: C++ CI/CD Pipeline
 
+# Запускаємо при пушах у головну гілку, пулл-реквестах ТА при створенні тегів версій
 on:
   push:
     branches: [ "main", "master" ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
 
 jobs:
-  build-and-test:
-    # Використовуємо Windows, бо в коді є прив'язка до C:\Windows\Fonts
+  build-test-release:
     runs-on: windows-latest
-
+    
     steps:
-    # 1. Завантажуємо твій код на віртуальну машину
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # 2. Створюємо файли для збірки за допомогою CMake
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
 
-    # 3. Компілюємо проєкт
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config Release
 
-    # 4. Запускаємо тести
     - name: Run Tests
       working-directory: ${{github.workspace}}/build
       run: ctest -C Release --output-on-failure
 
-    # 5. (Опціонально) Зберігаємо скомпільований .exe файл, щоб його можна було завантажити
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
       with:
         name: Coursework-App
-        path: ${{github.workspace}}/build/Release/*.exe # Шлях може трохи відрізнятися залежно від твого CMakeLists
+        path: ${{github.workspace}}/build/Release/*.exe
+
+    - name: Prepare files for ZIP
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        mkdir ReleaseApp
+        copy ${{github.workspace}}\build\Release\*.exe ReleaseApp\
+      shell: cmd
+
+    - name: Create ZIP Archive
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: Compress-Archive -Path ReleaseApp\* -DestinationPath Coursework-App.zip
+
+    - name: Publish GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: Coursework-App.zip
+        generate_release_notes: true
