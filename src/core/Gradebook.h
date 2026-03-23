@@ -34,12 +34,26 @@ public:
             }
 
             std::vector<double> subjectScores;
+            ScaleType scale = ScaleType::TwelvePoint;
+            bool foundRegular = false;
             for (const Assessments* task : assessments) {
+                if (task->getType() != AssessmentType::REGULAR || !task->hasGrades()) {
+                    continue;
+                }
+
+                if (!foundRegular) {
+                    scale = task->getScale();
+                    foundRegular = true;
+                }
+
                 subjectScores.push_back(task->getCurrentScore());
             }
 
-            ScaleType scale = assessments.front()->getScale();
-            
+            if (subjectScores.empty()) {
+                actualAverages[sub->getLinkId()] = 0.0;
+                continue;
+            }
+
             ICalculationStrategy* strategy = StrategyFactory::createStrategy(scale);
             actualAverages[sub->getLinkId()] = strategy->calculate(subjectScores);
             
@@ -53,6 +67,12 @@ public:
         for (const Subject* sub : subjects) {
             if (sub->getLinkId() == target_link_id) {
                 std::vector<Assessments*> assessments = sub->GetAssessments();
+                for (const Assessments* task : assessments) {
+                    if (task->getType() == AssessmentType::REGULAR) {
+                        return task->getScale();
+                    }
+                }
+
                 if (!assessments.empty()) {
                     return assessments.front()->getScale();
                 }

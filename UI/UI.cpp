@@ -408,18 +408,37 @@ void DrawDashboard(AppState& appState) {
                 else if (appState.selectedDisplayScale == 3) targetScale = ScaleType::TenPoint;
 
                 double totalScore = 0.0;
+                int includedSubjects = 0;
                 for (auto* sub : sortedSubjects) {
+                    bool hasRegularGrades = false;
+                    const auto assessments = sub->GetAssessments();
+                    for (const Assessments* task : assessments) {
+                        if (task->getType() == AssessmentType::REGULAR && task->hasGrades()) {
+                            hasRegularGrades = true;
+                            break;
+                        }
+                    }
+
+                    if (!hasRegularGrades) {
+                        continue;
+                    }
+
                     ScaleType nativeScale = appState.system.getGradebook().getSubjectScale(sub->getLinkId());
                     double convertedScore = appState.uiConverter.convert(actualAverages[sub->getLinkId()], nativeScale, targetScale);
                     totalScore += convertedScore;
+                    includedSubjects++;
                 }
 
-                double averageScore = totalScore / sortedSubjects.size();
+                double averageScore = (includedSubjects > 0) ? (totalScore / includedSubjects) : 0.0;
 
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 1.0f, 0.2f, 1.0f)); 
                 ImGui::Text(" Семестр успішно закрито!");
                 ImGui::SetWindowFontScale(1.2f); 
-                ImGui::Text("Ваш загальний середній бал за семестр: %.2f", averageScore);
+                if (includedSubjects > 0) {
+                    ImGui::Text("Ваш загальний середній бал за семестр: %.2f", averageScore);
+                } else {
+                    ImGui::Text("Немає regular-оцінок для розрахунку середнього.");
+                }
                 ImGui::SetWindowFontScale(1.0f); 
                 ImGui::PopStyleColor();
             }
