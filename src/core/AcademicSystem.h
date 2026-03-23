@@ -37,13 +37,20 @@ public:
         return semesterManager.getCurrentSemester(); 
     }
 
+    std::vector<std::string> getAvailableSaves() const {
+        return dataManager.getListOfSaves();
+    }
+
     void saveSystemState(const std::string& filename) {
         dataManager.saveCurrentProgress(gradebook, semesterManager.getCurrentSemester(), filename);
     }
 
     bool loadSystemState(const std::string& filename) {
-        int tempSemester = 1; 
-        bool success = dataManager.loadCurrentProgress(gradebook, tempSemester, filename);
+        int loadedSemester = 1; 
+        bool success = dataManager.loadCurrentProgress(gradebook, loadedSemester, filename);
+        if (success) {
+            semesterManager.setCurrentSemester(loadedSemester);
+        }
         return success;
     }
 
@@ -57,7 +64,20 @@ public:
     }
 
     YearlyReport endYear(int year) {
-        return reportBuilder.generateReport(year, archivedSubjects, gradebook.getActualAverages(), converter);
+        const int firstSemesterOfYear = year * 2 - 1;
+        const int secondSemesterOfYear = year * 2;
+
+        std::vector<Subject*> yearSubjects;
+        yearSubjects.reserve(archivedSubjects.size());
+
+        for (Subject* subject : archivedSubjects) {
+            const int semester = subject->getSemester();
+            if (semester == firstSemesterOfYear || semester == secondSemesterOfYear) {
+                yearSubjects.push_back(subject);
+            }
+        }
+
+        return reportBuilder.generateReport(year, yearSubjects, converter);
     }
 };
 

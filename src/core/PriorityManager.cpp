@@ -1,5 +1,6 @@
 #include "PriorityManager.h"
 #include "assessments.h"
+#include "GradePolicy.h"
 #include <algorithm>
 
 void PriorityManager::update(Subject* s) {
@@ -16,17 +17,14 @@ void PriorityManager::update(Subject* s) {
         if (task->hasGrades()) {
             double currentScore = task->getCurrentScore();
             ScaleType scale = task->getScale();
-            if ((scale == ScaleType::FivePoint && currentScore < 3.0) || 
-                (scale == ScaleType::TwelvePoint && currentScore < 4.0) || 
-                (scale == ScaleType::TenPoint && currentScore < 4.0) ||
-                (scale == ScaleType::Accumulative && currentScore < 60.0)) {
+            if (!GradePolicy::isPassingScore(scale, currentScore)) {
                 hasBadGrades = true;
             }
         }
     }
 
     if (hasBadGrades) {
-        finalPriority += 2000;
+        finalPriority += GradePolicy::BAD_GRADE_PENALTY;
     }
 
     subjectPriorities[s] = finalPriority; 

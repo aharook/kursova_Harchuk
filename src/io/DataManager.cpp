@@ -64,6 +64,9 @@ bool DataManager::loadCurrentProgress(Gradebook& gradebook, int& currentSemester
 
     if (!inFile.is_open()) return false;
 
+    // Replace current in-memory state with loaded save content.
+    gradebook.clear();
+
     inFile >> currentSemester;
 
     size_t subjectCount;

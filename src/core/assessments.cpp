@@ -1,6 +1,6 @@
 #include "assessments.h"
-#include <map>
 #include "averageCalculation.h" 
+#include "GradePolicy.h"
 
 Assessments::Assessments(AssessmentType Type, ScaleType scale, int basePriority, bool Isblocker, ICalculationStrategy* strategy, const std::vector<double>& Grades)
     : Type(Type), scale(scale), basePriority(basePriority), IsBlocker(Isblocker), strategy(strategy), Grades(Grades) {}
@@ -17,13 +17,7 @@ std::vector<double> Assessments::getGrades() const { return Grades; }
 bool Assessments::hasGrades() const { return !Grades.empty(); }
 
 double Assessments::getMaxAllowedGrade() const {
-    switch (scale) {
-        case ScaleType::TwelvePoint: return 12.0;
-        case ScaleType::TenPoint: return 10.0;
-        case ScaleType::FivePoint: return 5.0;
-        case ScaleType::Accumulative: return 100.0; 
-        default: return 100.0;
-    }
+    return GradePolicy::getMaxAllowedGrade(scale);
 }
 
 void Assessments::clearGrades() {
@@ -39,22 +33,9 @@ double Assessments::getCurrentScore() const {
 
 bool Assessments::isPassed() const {
     if (Grades.empty()) return false;
-    
-    double score = getCurrentScore();
-    
-    static const std::map<ScaleType, double> passingThresholds = {
-        {ScaleType::TenPoint, 6.0},
-        {ScaleType::TwelvePoint, 4.0},
-        {ScaleType::FivePoint, 3.0},
-        {ScaleType::Accumulative, 60.0}
-    };
 
-    auto it = passingThresholds.find(scale);
-    if (it != passingThresholds.end()) {
-        return score >= it->second;
-    }
-    
-    return score > 0.0; 
+    double score = getCurrentScore();
+    return GradePolicy::isPassingScore(scale, score);
 }
 
 Assessments* AssessmentFactory::createExam(ScaleType scale) {

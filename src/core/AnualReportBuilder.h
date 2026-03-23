@@ -7,9 +7,11 @@
 #include "YearlyReport.h"
 #include "subject.h"
 #include "GradeConverter.h" 
+#include "SubjectPerformance.h"
+
 class AnnualReportBuilder {
 public:
-    YearlyReport generateReport(int year, const std::vector<Subject*>& allYearSubjects, std::map<std::string, double> actualAverages, GradeConverter& converter) {
+    YearlyReport generateReport(int year, const std::vector<Subject*>& allYearSubjects, GradeConverter& converter) {
         std::map<std::string, std::vector<Subject*>> groupedSubjects;
         bool hasBlockers = false;
 
@@ -27,12 +29,9 @@ public:
         for (const auto& pair : groupedSubjects) {
             const std::vector<Subject*>& parts = pair.second;
             std::string name = parts[0]->Getname(); 
-            double rawScore = actualAverages[pair.first]; 
 
-            ScaleType subjectScale = ScaleType::Accumulative; 
-            if (!parts[0]->GetAssessments().empty()) {
-                subjectScale = parts[0]->GetAssessments().front()->getScale();
-            }
+            ScaleType subjectScale = SubjectPerformance::resolveRegularScale(parts);
+            double rawScore = SubjectPerformance::calculateRegularScore(parts);
 
             double normalizedScore = converter.convert(rawScore, subjectScale, ScaleType::Accumulative);
 

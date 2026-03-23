@@ -13,6 +13,7 @@ public:
     SemesterManager();
     
     int getCurrentSemester() const;
+    void setCurrentSemester(int semester);
     
     bool canEndSemester(const Gradebook& activeGradebook) const;
     

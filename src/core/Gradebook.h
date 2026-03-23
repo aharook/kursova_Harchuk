@@ -4,8 +4,8 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <algorithm>
 #include "subject.h"
-#include "averageCalculation.h" 
 
 class Gradebook {
 private:
@@ -19,6 +19,24 @@ public:
     void addSubject(Subject* sub) {
         subjects.push_back(sub);
     }
+
+    bool removeSubject(Subject* target) {
+        auto it = std::find(subjects.begin(), subjects.end(), target);
+        if (it == subjects.end()) {
+            return false;
+        }
+
+        delete *it;
+        subjects.erase(it);
+        return true;
+    }
+
+    void clear() {
+        for (Subject* sub : subjects) {
+            delete sub;
+        }
+        subjects.clear();
+    }
     
     const std::vector<Subject*>& getSubjects() const { return subjects; }
 
@@ -26,38 +44,7 @@ public:
         std::map<std::string, double> actualAverages;
         
         for (const Subject* sub : subjects) {
-            std::vector<Assessments*> assessments = sub->GetAssessments();
-            
-            if (assessments.empty()) {
-                actualAverages[sub->getLinkId()] = 0.0;
-                continue;
-            }
-
-            std::vector<double> subjectScores;
-            ScaleType scale = ScaleType::TwelvePoint;
-            bool foundRegular = false;
-            for (const Assessments* task : assessments) {
-                if (task->getType() != AssessmentType::REGULAR || !task->hasGrades()) {
-                    continue;
-                }
-
-                if (!foundRegular) {
-                    scale = task->getScale();
-                    foundRegular = true;
-                }
-
-                subjectScores.push_back(task->getCurrentScore());
-            }
-
-            if (subjectScores.empty()) {
-                actualAverages[sub->getLinkId()] = 0.0;
-                continue;
-            }
-
-            ICalculationStrategy* strategy = StrategyFactory::createStrategy(scale);
-            actualAverages[sub->getLinkId()] = strategy->calculate(subjectScores);
-            
-            delete strategy; 
+            actualAverages[sub->getLinkId()] = sub->getCurrentScore();
         }
 
         return actualAverages;
@@ -66,16 +53,7 @@ public:
     ScaleType getSubjectScale(const std::string& target_link_id) const {
         for (const Subject* sub : subjects) {
             if (sub->getLinkId() == target_link_id) {
-                std::vector<Assessments*> assessments = sub->GetAssessments();
-                for (const Assessments* task : assessments) {
-                    if (task->getType() == AssessmentType::REGULAR) {
-                        return task->getScale();
-                    }
-                }
-
-                if (!assessments.empty()) {
-                    return assessments.front()->getScale();
-                }
+                return sub->getScale();
             }
         }
         return ScaleType::TwelvePoint; 

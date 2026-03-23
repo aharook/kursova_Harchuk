@@ -1,5 +1,6 @@
 #include "subject.h"
-#include <map>
+#include "GradePolicy.h"
+#include "SubjectPerformance.h"
 
 
 std::string Subject::generateLinkId(const std::string& name) {
@@ -55,54 +56,17 @@ void Subject::addGradeToTask(int taskIndex, double grade) {
 }
 
 bool Subject::hasPendingBlockers() const {
-    for (Assessments* task : assessments) {
-        if (task->getIsBlocker() && !task->isPassed()) {
-            return true; 
-        }
-    }
-    return false; 
+    return SubjectPerformance::hasPendingBlockers(assessments);
 }
 int Subject::getPriorityScore() const { 
-    int totalPriority = 0;
-    for (const Assessments* task : assessments) {
-        totalPriority += task->getBasePriority();
-        
-        if (task->getIsBlocker() && !task->isPassed()) {
-            totalPriority += 1000; 
-        }
-    }
-    return totalPriority; 
+    return SubjectPerformance::getPriorityScore(assessments);
 }
 ScaleType Subject::getScale() const {
-
-    if (assessments.empty()) return ScaleType::Accumulative;
-
-    return assessments.front()->getScale();
+    return SubjectPerformance::resolveRegularScale(assessments);
 }
 
 double Subject::getCurrentScore() const {
-    if (assessments.empty()) return 0.0;
-
-    double totalScore = 0.0;
-    
-
-    if (getScale() == ScaleType::Accumulative) {
-        for (Assessments* task : assessments) {
-            totalScore += task->getCurrentScore();
-        }
-        return totalScore;
-    } 
-
-    else {
-        int count = 0;
-        for (Assessments* task : assessments) {
-            if (task->hasGrades()) {
-                totalScore += task->getCurrentScore();
-                count++;
-            }
-        }
-        return (count > 0) ? (totalScore / count) : 0.0;
-    }
+    return SubjectPerformance::calculateRegularScore(assessments);
 }
 
 bool Subject::isPassed() const {
@@ -110,25 +74,9 @@ bool Subject::isPassed() const {
     if (hasPendingBlockers()) return false;
 
 
-    bool hasAnyGrades = false;
-    for (Assessments* task : assessments) {
-        if (task->hasGrades()) hasAnyGrades = true;
-    }
-    if (!hasAnyGrades) return false;
+    if (!SubjectPerformance::hasAnyRegularGrades(assessments)) return false;
 
 
     double score = getCurrentScore();
-    static const std::map<ScaleType, double> passingThresholds = {
-        {ScaleType::TenPoint, 6.0},
-        {ScaleType::TwelvePoint, 4.0},
-        {ScaleType::FivePoint, 3.0},
-        {ScaleType::Accumulative, 60.0}
-    };
-
-    auto it = passingThresholds.find(getScale());
-    if (it != passingThresholds.end()) {
-        return score >= it->second;
-    }
-    
-    return score > 0.0;
+    return GradePolicy::isPassingScore(getScale(), score);
 }

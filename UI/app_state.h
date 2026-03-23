@@ -33,6 +33,16 @@ struct AppState {
 
     bool showGradeError = false;
     char gradeErrorMessage[256] = "";
+
+    char saveFileName[128] = "save.dat";
+    std::vector<std::string> availableSaves;
+    int selectedSaveIndex = -1;
+    bool saveListInitialized = false;
+
+    bool showSystemMessage = false;
+    char systemMessage[256] = "";
+
+    bool dataReloadedThisFrame = false;
 };
 
 #endif 

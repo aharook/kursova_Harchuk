@@ -17,6 +17,8 @@ add_executable(${PROJECT_NAME}
     src/main.cpp 
     UI/UI.cpp
     UI/grade_entry.cpp
+    UI/subject_modals.cpp
+    UI/dashboard_parts.cpp
     ${CORE_SOURCES}
 )
 

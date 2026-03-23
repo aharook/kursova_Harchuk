@@ -28,7 +28,7 @@ public:
     std::string Getname() const { return Name; }
     std::string getLinkId() const { return link_id; } 
     bool getIsMultiSemester() const { return IsmultiSemester; }
-    std::vector<Assessments*> GetAssessments() const { return assessments; }
+    const std::vector<Assessments*>& GetAssessments() const { return assessments; }
     
     void SetName(const std::string& newName);
     void setIsMultiSemester(bool status);

@@ -6,6 +6,10 @@ int SemesterManager::getCurrentSemester() const {
     return currentSemester;
 }
 
+void SemesterManager::setCurrentSemester(int semester) {
+    currentSemester = (semester > 0) ? semester : 1;
+}
+
 bool SemesterManager::canEndSemester(const Gradebook& activeGradebook) const {
     return !activeGradebook.hasPendingBlockers();
 }

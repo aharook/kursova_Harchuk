@@ -1,13 +1,11 @@
-#ifndef UI_H
-#define UI_H
+#ifndef SUBJECT_MODALS_H
+#define SUBJECT_MODALS_H
 
 #include "app_state.h"
 
 namespace UI {
     void DrawAddSubjectModal(AppState& state);
     void DrawEditSubjectModal(AppState& state);
-    void DrawAddGradeModal(AppState& state);
-    void DrawDashboard(AppState& state);
 }
 
 #endif
