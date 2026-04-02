@@ -15,6 +15,8 @@ private:
     std::vector<Assessments*> assessments;
     std::vector<IObserver*> observers;
     int semester = 1;
+    int Users_Priority = 0;
+    bool hasUsersPriority = false;
     std::string generateLinkId(const std::string& name);
 
 public:
@@ -42,6 +44,9 @@ public:
 
     void setSemester(int s) { semester = s; }
     int getSemester() const { return semester; }
+    void setUsersPriority(int priority);
+    bool hasCustomUsersPriority() const { return hasUsersPriority; }
+    int getUsersPriority() const { return Users_Priority; }
     
     bool hasPendingBlockers() const;
     int getPriorityScore() const; 

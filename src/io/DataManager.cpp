@@ -2,6 +2,7 @@
 #include <iostream>
 #include <map>
 #include <functional>
+#include <sstream>
 
 namespace fs = std::filesystem;
 
@@ -35,7 +36,8 @@ void DataManager::saveCurrentProgress(const Gradebook& gradebook, int currentSem
         outFile << safeName << " " 
                 << sub->getSemester() << " " 
                 << sub->getIsMultiSemester() << " " 
-                << sub->getLinkId() << "\n";
+            << sub->getLinkId() << " "
+            << sub->getUsersPriority() << "\n";
 
         const std::vector<Assessments*>& tasks = sub->GetAssessments();
         outFile << tasks.size() << "\n"; 
@@ -84,11 +86,21 @@ bool DataManager::loadCurrentProgress(Gradebook& gradebook, int& currentSemester
         std::string name, linkId;
         int sem;
         bool isMulti;
+        int usersPriority = 0;
 
         inFile >> name >> sem >> isMulti >> linkId;
+        std::string tail;
+        std::getline(inFile, tail);
+        if (!tail.empty()) {
+            std::istringstream tailStream(tail);
+            tailStream >> usersPriority;
+        }
         for (char& c : name) if (c == '_') c = ' ';
 
         Subject* newSubject = new Subject(name, sem, isMulti, linkId);
+        if (usersPriority > 0) {
+            newSubject->setUsersPriority(usersPriority);
+        }
 
         size_t taskCount;
         inFile >> taskCount;

@@ -1,6 +1,6 @@
 #include "subject.h"
 #include "GradePolicy.h"
-#include "SubjectPerformance.h"
+#include "AssessmentPerformanceService.h"
 
 
 std::string Subject::generateLinkId(const std::string& name) {
@@ -16,7 +16,6 @@ Subject::Subject(const std::string& Name, int semester, bool IsmultiSemester, co
 Subject::Subject(const std::string& Name, int semester, bool IsmultiSemester, const std::string& existingId, const std::vector<Assessments*> assessments)
     : Name(Name), IsmultiSemester(IsmultiSemester), link_id(existingId), assessments(assessments), semester(semester) {
 }
-
 
 Subject::~Subject() {
     for (Assessments* task : assessments) {
@@ -55,18 +54,29 @@ void Subject::addGradeToTask(int taskIndex, double grade) {
     }
 }
 
+void Subject::setUsersPriority(int priority) {
+    if (priority > 0) {
+        Users_Priority = priority;
+        hasUsersPriority = true;
+    } else {
+        Users_Priority = 0;
+        hasUsersPriority = false;
+    }
+    notifyObservers();
+}
+
 bool Subject::hasPendingBlockers() const {
-    return SubjectPerformance::hasPendingBlockers(assessments);
+    return AssessmentPerformanceService::hasPendingBlockers(assessments);
 }
 int Subject::getPriorityScore() const { 
-    return SubjectPerformance::getPriorityScore(assessments);
+    return AssessmentPerformanceService::getPriorityScore(assessments);
 }
 ScaleType Subject::getScale() const {
-    return SubjectPerformance::resolveRegularScale(assessments);
+    return AssessmentPerformanceService::resolveRegularScale(assessments);
 }
 
 double Subject::getCurrentScore() const {
-    return SubjectPerformance::calculateRegularScore(assessments);
+    return AssessmentPerformanceService::calculateRegularScore(assessments);
 }
 
 bool Subject::isPassed() const {
@@ -74,7 +84,7 @@ bool Subject::isPassed() const {
     if (hasPendingBlockers()) return false;
 
 
-    if (!SubjectPerformance::hasAnyRegularGrades(assessments)) return false;
+    if (!AssessmentPerformanceService::hasAnyRegularGrades(assessments)) return false;
 
 
     double score = getCurrentScore();

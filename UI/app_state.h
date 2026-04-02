@@ -26,6 +26,8 @@ struct AppState {
     char newGradesBuffer[256] = "";   
 
     int newSubjScale = 0; 
+    bool hasCustomPriority = false;
+    int customPriorityIndex = 0;
     bool hasRegular = false;
     bool hasCoursework = false;
     bool hasPractice = false;

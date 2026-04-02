@@ -27,6 +27,10 @@ void PriorityManager::update(Subject* s) {
         finalPriority += GradePolicy::BAD_GRADE_PENALTY;
     }
 
+    if (s->hasCustomUsersPriority()) {
+        finalPriority += s->getUsersPriority();
+    }
+
     subjectPriorities[s] = finalPriority; 
 }
 

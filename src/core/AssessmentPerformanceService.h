@@ -1,12 +1,12 @@
-#ifndef SUBJECTPERFORMANCE_H
-#define SUBJECTPERFORMANCE_H
+#ifndef ASSESSMENT_PERFORMANCE_SERVICE_H
+#define ASSESSMENT_PERFORMANCE_SERVICE_H
 
 #include <vector>
-#include "subject.h"
+#include "assessments.h"
 #include "averageCalculation.h"
 #include "GradePolicy.h"
 
-class SubjectPerformance {
+class AssessmentPerformanceService {
 private:
     static void collectRegularScores(
         const std::vector<Assessments*>& assessments,
@@ -90,30 +90,6 @@ public:
         bool hasRegularScale = false;
 
         collectRegularScores(assessments, scores, scale, hasRegularScale);
-        return calculateWithScale(scores, hasRegularScale ? scale : ScaleType::TwelvePoint);
-    }
-
-    static ScaleType resolveRegularScale(const std::vector<Subject*>& subjects) {
-        for (const Subject* subject : subjects) {
-            const std::vector<Assessments*>& assessments = subject->GetAssessments();
-            for (const Assessments* task : assessments) {
-                if (task->getType() == AssessmentType::REGULAR) {
-                    return task->getScale();
-                }
-            }
-        }
-        return ScaleType::TwelvePoint;
-    }
-
-    static double calculateRegularScore(const std::vector<Subject*>& subjects) {
-        std::vector<double> scores;
-        ScaleType scale = ScaleType::TwelvePoint;
-        bool hasRegularScale = false;
-
-        for (const Subject* subject : subjects) {
-            collectRegularScores(subject->GetAssessments(), scores, scale, hasRegularScale);
-        }
-
         return calculateWithScale(scores, hasRegularScale ? scale : ScaleType::TwelvePoint);
     }
 };

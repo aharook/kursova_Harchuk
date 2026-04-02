@@ -7,7 +7,7 @@
 #include "YearlyReport.h"
 #include "subject.h"
 #include "GradeConverter.h" 
-#include "SubjectPerformance.h"
+#include "SubjectGroupPerformanceService.h"
 
 class AnnualReportBuilder {
 public:
@@ -30,8 +30,8 @@ public:
             const std::vector<Subject*>& parts = pair.second;
             std::string name = parts[0]->Getname(); 
 
-            ScaleType subjectScale = SubjectPerformance::resolveRegularScale(parts);
-            double rawScore = SubjectPerformance::calculateRegularScore(parts);
+            ScaleType subjectScale = SubjectGroupPerformanceService::resolveRegularScale(parts);
+            double rawScore = SubjectGroupPerformanceService::calculateRegularScore(parts);
 
             double normalizedScore = converter.convert(rawScore, subjectScale, ScaleType::Accumulative);
 

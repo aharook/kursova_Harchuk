@@ -25,6 +25,13 @@ void DrawAddSubjectModal(AppState& state) {
         ImGui::Checkbox("Сесія (Екзамен/Залік)", &state.hasExam);
 
         ImGui::Separator();
+        ImGui::Checkbox("Додати пріоритет (*)", &state.hasCustomPriority);
+        if (state.hasCustomPriority) {
+            const char* customPriorityOptions[] = { "100", "200", "300" };
+            ImGui::Combo("Додатковий пріоритет", &state.customPriorityIndex, customPriorityOptions, IM_ARRAYSIZE(customPriorityOptions));
+        }
+
+        ImGui::Separator();
 
         bool hasName = false;
         for (size_t i = 0; i < strlen(state.newSubjName); i++) {
@@ -57,10 +64,17 @@ void DrawAddSubjectModal(AppState& state) {
             if (state.hasPractice)   newSubj->addAssessment(AssessmentFactory::createPractice(scale));
             if (state.hasExam)       newSubj->addAssessment(AssessmentFactory::createExam(scale));
 
+            if (state.hasCustomPriority) {
+                static const int customPriorityValues[] = { 100, 200, 300 };
+                newSubj->setUsersPriority(customPriorityValues[state.customPriorityIndex]);
+            }
+
             state.system.addSubjectToCurrentSemester(newSubj);
             state.selectedSubject = newSubj;
 
             memset(state.newSubjName, 0, sizeof(state.newSubjName));
+            state.hasCustomPriority = false;
+            state.customPriorityIndex = 0;
             state.hasRegular = true; state.hasCoursework = false; state.hasPractice = false; state.hasExam = true;
 
             ImGui::CloseCurrentPopup();

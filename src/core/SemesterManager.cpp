@@ -28,6 +28,9 @@ void SemesterManager::transitionToNextSemester(Gradebook& activeGradebook, std::
                 true,
                 sub->getLinkId() 
             );
+            if (sub->hasCustomUsersPriority()) {
+                continuationSubject->setUsersPriority(sub->getUsersPriority());
+            }
             subjectsForNextSemester.push_back(continuationSubject);
         }
     }
