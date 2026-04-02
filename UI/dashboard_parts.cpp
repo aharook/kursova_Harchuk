@@ -46,6 +46,16 @@ static void RefreshSaves(AppState& appState) {
         return;
     }
 
+    const std::string latestSave = appState.system.getLatestSaveName();
+    if (!latestSave.empty()) {
+        for (size_t i = 0; i < appState.availableSaves.size(); ++i) {
+            if (appState.availableSaves[i] == latestSave) {
+                appState.selectedSaveIndex = static_cast<int>(i);
+                return;
+            }
+        }
+    }
+
     if (appState.selectedSaveIndex < 0 || appState.selectedSaveIndex >= static_cast<int>(appState.availableSaves.size())) {
         appState.selectedSaveIndex = 0;
     }
@@ -89,47 +99,23 @@ bool DrawTopPanel(AppState& appState) {
         appState.saveListInitialized = true;
     }
 
-    const std::string recommendedSaveName = BuildSemesterSaveName(appState.system.getCurrentSemester());
-    if (std::strlen(appState.saveFileName) == 0 || std::strcmp(appState.saveFileName, "save.dat") == 0) {
-        std::snprintf(appState.saveFileName, sizeof(appState.saveFileName), "%s", recommendedSaveName.c_str());
-    }
+    static std::string pendingOverwriteSaveName;
 
-    ImGui::BeginChild("TopPanel", ImVec2(0, 100), true);
+    ImGui::BeginChild("TopPanel", ImVec2(0, 86), true);
 
-    ImGui::Text("Поточний семестр: %d", appState.system.getCurrentSemester());
-    ImGui::SameLine(230);
-    ImGui::SetNextItemWidth(170);
-    ImGui::InputText("Файл", appState.saveFileName, IM_ARRAYSIZE(appState.saveFileName));
-
+    ImGui::Text("Семестр: %d", appState.system.getCurrentSemester());
     ImGui::SameLine();
-    if (ImGui::Button("Зберегти", ImVec2(100, 26))) {
-        std::string fileName = NormalizeSaveName(appState.saveFileName);
-        if (fileName.empty()) {
-            fileName = recommendedSaveName;
-        }
+    ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x - 110.0f + ImGui::GetCursorPosX());
+    ImGui::Checkbox("Темна тема##theme", &appState.isDarkTheme);
 
-        appState.system.saveSystemState(fileName);
-        RefreshSaves(appState);
+    ImGui::Spacing();
 
-        for (size_t i = 0; i < appState.availableSaves.size(); ++i) {
-            if (appState.availableSaves[i] == fileName) {
-                appState.selectedSaveIndex = static_cast<int>(i);
-                break;
-            }
-        }
-
-        std::snprintf(appState.saveFileName, sizeof(appState.saveFileName), "%s", fileName.c_str());
-        SetSystemMessage(appState, "Збереження успішно створено/оновлено.");
+    if (ImGui::Button("Зберегти", ImVec2(110, 28))) {
+        ImGui::OpenPopup("Зберегти як");
     }
 
     ImGui::SameLine();
-    if (ImGui::Button("Оновити", ImVec2(90, 26))) {
-        RefreshSaves(appState);
-        SetSystemMessage(appState, "Список збережень оновлено.");
-    }
-
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(170);
+    ImGui::SetNextItemWidth(240);
     const char* selectedSaveLabel = (appState.selectedSaveIndex >= 0 && appState.selectedSaveIndex < static_cast<int>(appState.availableSaves.size()))
         ? appState.availableSaves[appState.selectedSaveIndex].c_str()
         : "(нема збережень)";
@@ -148,9 +134,9 @@ bool DrawTopPanel(AppState& appState) {
     }
 
     ImGui::SameLine();
-    if (ImGui::Button("Завантажити", ImVec2(120, 26))) {
+    if (ImGui::Button("Завантажити", ImVec2(120, 28))) {
         if (appState.selectedSaveIndex < 0 || appState.selectedSaveIndex >= static_cast<int>(appState.availableSaves.size())) {
-            SetSystemMessage(appState, "Помилка: оберіть збереження зі списку.");
+            SetSystemMessage(appState, "Помилка: оберіть збереження.");
         } else {
             const std::string selectedSave = appState.availableSaves[appState.selectedSaveIndex];
             const bool loaded = appState.system.loadSystemState(selectedSave);
@@ -160,49 +146,109 @@ bool DrawTopPanel(AppState& appState) {
                 appState.openGradeModal = false;
                 appState.openEditSubjectModal = false;
                 appState.dataReloadedThisFrame = true;
-                SetSystemMessage(appState, "Збереження успішно завантажено.");
+                SetSystemMessage(appState, "Збереження завантажено.");
             } else {
-                SetSystemMessage(appState, "Помилка завантаження файлу.");
+                SetSystemMessage(appState, "Помилка завантаження.");
             }
         }
     }
 
-    ImGui::TextDisabled("Рекомендована назва: %s", recommendedSaveName.c_str());
-
-    if (appState.showSystemMessage) {
-        ImGui::TextWrapped("%s", appState.systemMessage);
-    }
-
-    bool hasDebts = appState.system.getGradebook().hasPendingBlockers();
-
-    ImGui::SameLine(ImGui::GetContentRegionAvail().x - 240);
+    const bool canEndSemester = appState.system.canEndCurrentSemester();
+    const bool hasDebts = !canEndSemester;
     if (hasDebts) {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.1f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.2f, 0.2f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
     } else {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.6f, 0.1f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.7f, 0.2f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.3f, 0.8f, 0.3f, 1.0f));
     }
 
-    if (ImGui::Button(hasDebts ? "Завершити семестр (Є борги!)" : "Завершити семестр", ImVec2(240, 30))) {
-        if (!hasDebts) {
-            appState.system.endSemester();
+    ImGui::BeginDisabled(!canEndSemester);
+    ImGui::SameLine();
+    if (ImGui::Button("Закінчити семестр", ImVec2(160, 28))) {
+        if (appState.system.endSemester()) {
+            std::string targetSaveName;
+            if (appState.selectedSaveIndex >= 0 && appState.selectedSaveIndex < static_cast<int>(appState.availableSaves.size())) {
+                targetSaveName = appState.availableSaves[appState.selectedSaveIndex];
+            } else {
+                targetSaveName = "autosave.dat";
+            }
+
+            appState.system.saveSystemState(targetSaveName);
+            RefreshSaves(appState);
             appState.selectedSubject = nullptr;
+            SetSystemMessage(appState, "Семестр завершено і збережено у файл.");
         }
     }
+    ImGui::EndDisabled();
+    ImGui::PopStyleColor(2);
+
     ImGui::SameLine();
-    if (ImGui::Button("Сформувати річний звіт", ImVec2(220, 30))) {
+    if (ImGui::Button("Закінчити рік", ImVec2(140, 28))) {
         const int completedYears = (appState.system.getCurrentSemester() - 1) / 2;
         if (completedYears <= 0) {
-            SetSystemMessage(appState, "Річний звіт недоступний: завершіть щонайменше 2 семестри.");
+            SetSystemMessage(appState, "Річний звіт: завершіть 2 семестри.");
         } else {
             YearlyReport report = appState.system.endYear(completedYears);
             SetSystemMessage(appState, BuildYearlyReportMessage(report));
         }
     }
-    ImGui::PopStyleColor(3);
+
+    if (ImGui::BeginPopupModal("Зберегти як", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::SetNextItemWidth(280);
+        ImGui::InputText("Назва файлу", appState.saveFileName, IM_ARRAYSIZE(appState.saveFileName));
+        ImGui::Spacing();
+
+        if (ImGui::Button("Підтвердити", ImVec2(120, 0))) {
+            const std::string requestedSaveName = NormalizeSaveName(appState.saveFileName);
+            if (requestedSaveName.empty()) {
+                SetSystemMessage(appState, "Помилка: введіть назву збереження.");
+            } else {
+                const bool alreadyExists = std::find(appState.availableSaves.begin(), appState.availableSaves.end(), requestedSaveName) != appState.availableSaves.end();
+                if (alreadyExists) {
+                    pendingOverwriteSaveName = requestedSaveName;
+                    ImGui::OpenPopup("Підтвердження перезапису");
+                } else {
+                    appState.system.saveSystemState(requestedSaveName);
+                    RefreshSaves(appState);
+                    SetSystemMessage(appState, "Нове збереження створено.");
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Скасувати", ImVec2(100, 0))) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        if (ImGui::BeginPopupModal("Підтвердження перезапису", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::TextWrapped("Збереження з такою назвою вже існує:\n%s\nПерезаписати?", pendingOverwriteSaveName.c_str());
+            ImGui::Spacing();
+
+            if (ImGui::Button("Так, перезаписати", ImVec2(150, 0))) {
+                appState.system.saveSystemState(pendingOverwriteSaveName);
+                RefreshSaves(appState);
+                SetSystemMessage(appState, "Збереження перезаписано.");
+                pendingOverwriteSaveName.clear();
+                ImGui::CloseCurrentPopup();
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Ні", ImVec2(80, 0))) {
+                pendingOverwriteSaveName.clear();
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+
+    if (appState.showSystemMessage) {
+        ImGui::Spacing();
+        ImGui::TextWrapped("%s", appState.systemMessage);
+    }
 
     ImGui::EndChild();
     return hasDebts;
@@ -220,19 +266,35 @@ void DrawSubjectsList(AppState& appState, const std::vector<Subject*>& sortedSub
 
         ImGui::PushID(static_cast<int>(i));
 
+        ImVec4 textColor = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+        ImVec4 bgColor = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+
         if (subj->hasPendingBlockers()) {
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
-        } else if (prio >= 30) {
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.3f, 1.0f));
+            textColor = ImVec4(1.0f, 0.2f, 0.2f, 1.0f);
+            bgColor = ImVec4(1.0f, 0.9f, 0.9f, 0.3f);
+        } else if (prio >= 2000) {
+            textColor = ImVec4(1.0f, 0.4f, 0.0f, 1.0f);
+            bgColor = ImVec4(1.0f, 0.95f, 0.85f, 0.2f);
+        } else if (prio >= 500) {
+            textColor = ImVec4(0.8f, 0.6f, 0.0f, 1.0f);
+            bgColor = ImVec4(1.0f, 0.98f, 0.9f, 0.1f);
         } else {
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 1.0f, 0.6f, 1.0f));
+            textColor = ImVec4(0.2f, 0.6f, 0.2f, 1.0f);
+            bgColor = ImVec4(0.9f, 1.0f, 0.9f, 0.15f);
         }
 
-        std::string itemLabel = subj->Getname() + "\nПріоритет: " + std::to_string(prio);
+        ImGui::PushStyleColor(ImGuiCol_Text, textColor);
 
-        if (ImGui::Selectable(itemLabel.c_str(), isSelected, 0, ImVec2(0, 42))) {
+        std::string starIndicator = subj->hasCustomUsersPriority() ? " ?" : "";
+        std::string itemLabel = subj->Getname() + starIndicator;
+
+        if (ImGui::Selectable(itemLabel.c_str(), isSelected, 0, ImVec2(0, 36))) {
             if (isSelected) appState.selectedSubject = nullptr;
             else appState.selectedSubject = subj;
+        }
+
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Пріоритет: %d", prio);
         }
 
         ImGui::PopStyleColor();
@@ -243,7 +305,7 @@ void DrawSubjectsList(AppState& appState, const std::vector<Subject*>& sortedSub
 
     ImGui::Spacing();
     if (ImGui::Button("+ Створити предмет", ImVec2(-1, 35))) {
-        ImGui::OpenPopup("Додати предмет");
+        ImGui::OpenPopup("Створити предмет");
     }
 }
 
@@ -360,9 +422,9 @@ void DrawSemesterOverview(AppState& appState, const std::vector<Subject*>& sorte
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Показувати оцінки у:");
     ImGui::SameLine();
-    const char* displayScales = "12-бальній шкалі\0 100-бальній\0 5-бальній шкалі\0 10-бальній шкалі\0";
-    ImGui::SetNextItemWidth(160);
-    ImGui::Combo("##displayScale", &appState.selectedDisplayScale, displayScales, 4);
+    const char* displayScales = "12-бальній\0 5-бальній\0 10-бальній\0";
+    ImGui::SetNextItemWidth(140);
+    ImGui::Combo("##displayScale", &appState.selectedDisplayScale, displayScales, 3);
     ImGui::Spacing();
     std::map<std::string, double> actualAverages = appState.system.getGradebook().getActualAverages();
 
@@ -387,9 +449,8 @@ void DrawSemesterOverview(AppState& appState, const std::vector<Subject*>& sorte
             ScaleType targetScale = ScaleType::TwelvePoint;
             std::string scaleSuffix = " (12-бальна)";
 
-            if (appState.selectedDisplayScale == 1) { targetScale = ScaleType::Accumulative; scaleSuffix = " (100-бальна)"; }
-            else if (appState.selectedDisplayScale == 2) { targetScale = ScaleType::FivePoint; scaleSuffix = " (5-бальна)"; }
-            else if (appState.selectedDisplayScale == 3) { targetScale = ScaleType::TenPoint; scaleSuffix = " (10-бальна)"; }
+            if (appState.selectedDisplayScale == 1) { targetScale = ScaleType::FivePoint; scaleSuffix = " (5-бальна)"; }
+            else if (appState.selectedDisplayScale == 2) { targetScale = ScaleType::TenPoint; scaleSuffix = " (10-бальна)"; }
 
             double convertedScore = appState.uiConverter.convert(nativeScore, nativeScale, targetScale);
 
@@ -407,7 +468,7 @@ void DrawSemesterOverview(AppState& appState, const std::vector<Subject*>& sorte
 
     ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
 
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.0f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.7f, 0.8f, 1.0f));
     ImGui::SeparatorText("Накопичувальна система");
     ImGui::PopStyleColor();
 
@@ -446,9 +507,8 @@ void DrawSemesterOverview(AppState& appState, const std::vector<Subject*>& sorte
             ImGui::PopStyleColor();
         } else {
             ScaleType targetScale = ScaleType::TwelvePoint;
-            if (appState.selectedDisplayScale == 1) targetScale = ScaleType::Accumulative;
-            else if (appState.selectedDisplayScale == 2) targetScale = ScaleType::FivePoint;
-            else if (appState.selectedDisplayScale == 3) targetScale = ScaleType::TenPoint;
+            if (appState.selectedDisplayScale == 1) targetScale = ScaleType::FivePoint;
+            else if (appState.selectedDisplayScale == 2) targetScale = ScaleType::TenPoint;
 
             double totalScore = 0.0;
             int includedSubjects = 0;

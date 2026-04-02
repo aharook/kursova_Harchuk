@@ -17,11 +17,22 @@ private:
 public:
     DataManager(const std::string& directory = "Saves");
 
-    void saveCurrentProgress(const Gradebook& gradebook, int currentSemester, const std::string& filename) const;
+    void saveCurrentProgress(
+        const Gradebook& gradebook,
+        const std::vector<Subject*>& archivedSubjects,
+        int currentSemester,
+        const std::string& filename
+    ) const;
     
-    bool loadCurrentProgress(Gradebook& gradebook, int& currentSemester, const std::string& filename) const;
+    bool loadCurrentProgress(
+        Gradebook& gradebook,
+        std::vector<Subject*>& archivedSubjects,
+        int& currentSemester,
+        const std::string& filename
+    ) const;
 
     std::vector<std::string> getListOfSaves() const;
+    std::string getLatestSaveFileName() const;
 };
 
 #endif

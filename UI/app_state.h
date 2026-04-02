@@ -16,7 +16,9 @@ struct AppState {
     Subject* selectedSubject = nullptr;
     Assessments* selectedAssessmentForGrade = nullptr;
     
-    int selectedDisplayScale = 0; 
+    int selectedDisplayScale = 0;
+    bool isDarkTheme = false;
+ 
 
     bool openEditSubjectModal = false;
     bool openGradeModal = false;

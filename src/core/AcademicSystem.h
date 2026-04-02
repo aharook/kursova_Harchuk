@@ -20,7 +20,12 @@ private:
     std::vector<Subject*> archivedSubjects; 
 
 public:
-    AcademicSystem() : converter("scales.csv") {}
+    AcademicSystem() : converter("scales.csv") {
+        const std::string latestSave = dataManager.getLatestSaveFileName();
+        if (!latestSave.empty()) {
+            loadSystemState(latestSave);
+        }
+    }
     ~AcademicSystem() {
         for (Subject* sub : archivedSubjects) delete sub;
     }
@@ -41,26 +46,34 @@ public:
         return dataManager.getListOfSaves();
     }
 
+    std::string getLatestSaveName() const {
+        return dataManager.getLatestSaveFileName();
+    }
+
     void saveSystemState(const std::string& filename) {
-        dataManager.saveCurrentProgress(gradebook, semesterManager.getCurrentSemester(), filename);
+        dataManager.saveCurrentProgress(gradebook, archivedSubjects, semesterManager.getCurrentSemester(), filename);
     }
 
     bool loadSystemState(const std::string& filename) {
         int loadedSemester = 1; 
-        bool success = dataManager.loadCurrentProgress(gradebook, loadedSemester, filename);
+        bool success = dataManager.loadCurrentProgress(gradebook, archivedSubjects, loadedSemester, filename);
         if (success) {
             semesterManager.setCurrentSemester(loadedSemester);
         }
         return success;
     }
 
+    bool canEndCurrentSemester() const {
+        return semesterManager.canEndSemester(gradebook);
+    }
+
     bool endSemester() {
-        bool hasBlockers = gradebook.hasPendingBlockers();
-        
+        if (!canEndCurrentSemester()) {
+            return false;
+        }
 
         semesterManager.transitionToNextSemester(gradebook, archivedSubjects);
-        
-        return hasBlockers; 
+        return true;
     }
 
     YearlyReport endYear(int year) {

@@ -9,28 +9,35 @@
 namespace UI {
 
 void DrawAddSubjectModal(AppState& state) {
-    if (ImGui::BeginPopupModal("Додати предмет", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::InputText("Назва предмета", state.newSubjName, IM_ARRAYSIZE(state.newSubjName));
+    if (ImGui::BeginPopupModal("Створити предмет", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::SetNextItemWidth(300);
+        ImGui::InputText("Назва##subj", state.newSubjName, IM_ARRAYSIZE(state.newSubjName));
 
-        ImGui::Separator();
-        ImGui::Text("Система оцінювання:");
-        const char* scaleTypes[] = { "12-бальна", "100-бальна", "5-бальна", "10-бальна" };
+        ImGui::Spacing();
+        ImGui::TextDisabled("Шкала оцінювання:");
+        const char* scaleTypes[] = { "100-бальна", "5-бальна", "10-бальна" };
+        ImGui::SetNextItemWidth(200);
         ImGui::Combo("##scale", &state.newSubjScale, scaleTypes, IM_ARRAYSIZE(scaleTypes));
 
-        ImGui::Separator();
-        ImGui::Text("Складові оцінки:");
-        ImGui::Checkbox("Звичайні завдання", &state.hasRegular);
-        ImGui::Checkbox("Курсова робота", &state.hasCoursework);
-        ImGui::Checkbox("Практика", &state.hasPractice);
-        ImGui::Checkbox("Сесія (Екзамен/Залік)", &state.hasExam);
+        ImGui::Spacing();
+        ImGui::TextDisabled("Компоненти оцінювання:");
+        ImGui::Checkbox("Завдання##reg", &state.hasRegular);
+        ImGui::SameLine(180);
+        ImGui::Checkbox("Курсова##cw", &state.hasCoursework);
+        ImGui::Checkbox("Практика##pr", &state.hasPractice);
+        ImGui::SameLine(180);
+        ImGui::Checkbox("Екзамен##ex", &state.hasExam);
 
-        ImGui::Separator();
-        ImGui::Checkbox("Додати пріоритет (*)", &state.hasCustomPriority);
+        ImGui::Spacing();
+        ImGui::Checkbox("Кастомний пріоритет", &state.hasCustomPriority);
         if (state.hasCustomPriority) {
+            ImGui::SameLine();
             const char* customPriorityOptions[] = { "100", "200", "300" };
-            ImGui::Combo("Додатковий пріоритет", &state.customPriorityIndex, customPriorityOptions, IM_ARRAYSIZE(customPriorityOptions));
+            ImGui::SetNextItemWidth(80);
+            ImGui::Combo("##priority", &state.customPriorityIndex, customPriorityOptions, IM_ARRAYSIZE(customPriorityOptions));
         }
 
+        ImGui::Spacing();
         ImGui::Separator();
 
         bool hasName = false;
@@ -45,19 +52,17 @@ void DrawAddSubjectModal(AppState& state) {
         bool canSave = hasAnyAssessment && hasName;
 
         if (!canSave) {
-            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Введіть реальну назву та оберіть тип завдання!");
-        } else {
-            ImGui::Text(" ");
+            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Введіть назву та виберіть компоненти");
         }
 
+        ImGui::Spacing();
         ImGui::BeginDisabled(!canSave);
-        if (ImGui::Button("Зберегти", ImVec2(120, 0))) {
+        if (ImGui::Button("Створити", ImVec2(100, 0))) {
             Subject* newSubj = new Subject(std::string(state.newSubjName), state.system.getCurrentSemester(), false);
 
-            ScaleType scale = ScaleType::TwelvePoint;
-            if (state.newSubjScale == 1) scale = ScaleType::Accumulative;
-            else if (state.newSubjScale == 2) scale = ScaleType::FivePoint;
-            else if (state.newSubjScale == 3) scale = ScaleType::TenPoint;
+            ScaleType scale = ScaleType::Accumulative;
+            if (state.newSubjScale == 1) scale = ScaleType::FivePoint;
+            else if (state.newSubjScale == 2) scale = ScaleType::TenPoint;
 
             if (state.hasRegular)    newSubj->addAssessment(AssessmentFactory::createRegular(scale));
             if (state.hasCoursework) newSubj->addAssessment(AssessmentFactory::createCoursework(scale));
@@ -82,7 +87,7 @@ void DrawAddSubjectModal(AppState& state) {
         ImGui::EndDisabled();
 
         ImGui::SameLine();
-        if (ImGui::Button("Скасувати", ImVec2(120, 0))) {
+        if (ImGui::Button("Скасувати", ImVec2(100, 0))) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();

@@ -32,7 +32,7 @@ int main() {
         std::cerr << "Не вдалося завантажити шрифт Arial" << std::endl;
     }
 
-    // 1. Вмикаємо світлу тему інтерфейсу
+    // 1. Вмикаємо світлу тему інтерфейсу за замовчуванням
     ImGui::StyleColorsLight();
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -45,6 +45,14 @@ int main() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
+        // Переключаємо тему якщо потрібно
+        if (appState.isDarkTheme) {
+            ImGui::StyleColorsDark();
+        } else {
+            ImGui::StyleColorsLight();
+        }
+
         UI::DrawDashboard(appState);
 
         ImGui::Render();
