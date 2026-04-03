@@ -7,8 +7,10 @@
 #include "GradeConverter.h"
 #include "DataManager.h"
 #include "YearlyReport.h"
+#include "YearlyReportSaver.h"
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 class AcademicSystem {
 private:
@@ -77,20 +79,57 @@ public:
     }
 
     YearlyReport endYear(int year) {
+        if (year <= 0) {
+            throw std::invalid_argument("Academic year must be positive.");
+        }
+
         const int firstSemesterOfYear = year * 2 - 1;
         const int secondSemesterOfYear = year * 2;
 
+        const int latestCompletedSemester = semesterManager.getCurrentSemester() - 1;
+        const int latestReportSecondSemester = (latestCompletedSemester % 2 == 0)
+            ? latestCompletedSemester
+            : (latestCompletedSemester - 1);
+        const int latestReportYear = (latestReportSecondSemester >= 2)
+            ? (latestReportSecondSemester / 2)
+            : 0;
+
+        if (year != latestReportYear) {
+            throw std::logic_error("Yearly report can be built only for the latest completed semester pair.");
+        }
+
         std::vector<Subject*> yearSubjects;
         yearSubjects.reserve(archivedSubjects.size());
+
+        bool hasFirstSemester = false;
+        bool hasSecondSemester = false;
 
         for (Subject* subject : archivedSubjects) {
             const int semester = subject->getSemester();
             if (semester == firstSemesterOfYear || semester == secondSemesterOfYear) {
                 yearSubjects.push_back(subject);
+                if (semester == firstSemesterOfYear) {
+                    hasFirstSemester = true;
+                }
+                if (semester == secondSemesterOfYear) {
+                    hasSecondSemester = true;
+                }
             }
         }
 
+        if (!hasFirstSemester || !hasSecondSemester) {
+            throw std::logic_error("Yearly report requires both semesters in the pair.");
+        }
+
         return reportBuilder.generateReport(year, yearSubjects, converter);
+    }
+
+    YearlyReport generateAndSaveYearlyReport(int year, std::string& savedFileName) {
+        YearlyReport report = endYear(year);
+
+        savedFileName = YearlyReportSaver::save(report, year);
+
+        return report;
     }
 };
 

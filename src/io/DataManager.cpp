@@ -52,7 +52,9 @@ Subject* readSubject(std::ifstream& inFile) {
     bool isMulti = false;
     int usersPriority = 0;
 
-    inFile >> name >> sem >> isMulti >> linkId;
+    if (!(inFile >> name >> sem >> isMulti >> linkId)) {
+        return nullptr;
+    }
     std::string tail;
     std::getline(inFile, tail);
     if (!tail.empty()) {
@@ -132,7 +134,7 @@ void DataManager::saveCurrentProgress(
 
     if (!outFile.is_open()) return;
 
-    outFile << currentSemester << "\n";
+    outFile << "SEMESTER " << currentSemester << "\n";
 
     const std::vector<Subject*>& subjects = gradebook.getSubjects();
     outFile << subjects.size() << "\n"; 
@@ -161,6 +163,32 @@ bool DataManager::loadCurrentProgress(
 
     if (!inFile.is_open()) return false;
 
+    std::string headerToken;
+    int loadedSemester = 1;
+    size_t subjectCount = 0;
+
+    if (!(inFile >> headerToken)) {
+        return false;
+    }
+
+    if (headerToken == "SEMESTER") {
+        if (!(inFile >> loadedSemester)) {
+            return false;
+        }
+        if (!(inFile >> subjectCount)) {
+            return false;
+        }
+    } else {
+        try {
+            loadedSemester = std::stoi(headerToken);
+        } catch (...) {
+            return false;
+        }
+        if (!(inFile >> subjectCount)) {
+            return false;
+        }
+    }
+
     // Replace current in-memory state with loaded save content.
     gradebook.clear();
     for (Subject* sub : archivedSubjects) {
@@ -168,14 +196,19 @@ bool DataManager::loadCurrentProgress(
     }
     archivedSubjects.clear();
 
-    inFile >> currentSemester;
-
-    size_t subjectCount;
-    inFile >> subjectCount;
+    currentSemester = loadedSemester;
 
 
     for (size_t i = 0; i < subjectCount; ++i) {
         Subject* newSubject = readSubject(inFile);
+        if (newSubject == nullptr) {
+            gradebook.clear();
+            for (Subject* sub : archivedSubjects) {
+                delete sub;
+            }
+            archivedSubjects.clear();
+            return false;
+        }
         gradebook.addSubject(newSubject);
     }
 
@@ -183,6 +216,14 @@ bool DataManager::loadCurrentProgress(
     if (inFile >> archivedCount) {
         for (size_t i = 0; i < archivedCount; ++i) {
             Subject* archivedSubject = readSubject(inFile);
+            if (archivedSubject == nullptr) {
+                gradebook.clear();
+                for (Subject* sub : archivedSubjects) {
+                    delete sub;
+                }
+                archivedSubjects.clear();
+                return false;
+            }
             archivedSubjects.push_back(archivedSubject);
         }
     } else {
@@ -198,7 +239,7 @@ std::vector<std::string> DataManager::getListOfSaves() const {
     std::vector<std::string> files;
     ensureDirectoryExists();
     for (const auto& entry : fs::directory_iterator(saveDirectory)) {
-        if (entry.is_regular_file()) {
+        if (entry.is_regular_file() && entry.path().extension() == ".dat") {
             files.push_back(entry.path().filename().string());
         }
     }

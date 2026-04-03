@@ -5,6 +5,7 @@
 #include <map>
 #include <cstdio>
 #include <cstring>
+#include <exception>
 #include "subject.h"
 #include "assessments.h"
 
@@ -32,9 +33,8 @@ static std::string NormalizeSaveName(const char* rawName) {
 static std::string BuildSemesterSaveName(int currentSemester) {
     const int normalizedSemester = (currentSemester > 0) ? currentSemester : 1;
     const int year = (normalizedSemester + 1) / 2;
-    const int semesterInYear = ((normalizedSemester - 1) % 2) + 1;
 
-    return "year_" + std::to_string(year) + "_sem_" + std::to_string(semesterInYear) + ".dat";
+    return "semester_" + std::to_string(normalizedSemester) + "_year_" + std::to_string(year) + "_save.dat";
 }
 
 static void RefreshSaves(AppState& appState) {
@@ -166,18 +166,14 @@ bool DrawTopPanel(AppState& appState) {
     ImGui::BeginDisabled(!canEndSemester);
     ImGui::SameLine();
     if (ImGui::Button("Закінчити семестр", ImVec2(160, 28))) {
-        if (appState.system.endSemester()) {
-            std::string targetSaveName;
-            if (appState.selectedSaveIndex >= 0 && appState.selectedSaveIndex < static_cast<int>(appState.availableSaves.size())) {
-                targetSaveName = appState.availableSaves[appState.selectedSaveIndex];
-            } else {
-                targetSaveName = "autosave.dat";
-            }
+        const int semesterToSave = std::max(1, appState.system.getCurrentSemester());
+        const std::string targetSaveName = BuildSemesterSaveName(semesterToSave);
+        appState.system.saveSystemState(targetSaveName);
 
-            appState.system.saveSystemState(targetSaveName);
+        if (appState.system.endSemester()) {
             RefreshSaves(appState);
             appState.selectedSubject = nullptr;
-            SetSystemMessage(appState, "Семестр завершено і збережено у файл.");
+            SetSystemMessage(appState, "Семестр завершено. Збереження семестру створено.");
         }
     }
     ImGui::EndDisabled();
@@ -185,12 +181,27 @@ bool DrawTopPanel(AppState& appState) {
 
     ImGui::SameLine();
     if (ImGui::Button("Закінчити рік", ImVec2(140, 28))) {
-        const int completedYears = (appState.system.getCurrentSemester() - 1) / 2;
-        if (completedYears <= 0) {
+        const int latestCompletedSemester = appState.system.getCurrentSemester() - 1;
+        if (latestCompletedSemester < 2) {
             SetSystemMessage(appState, "Річний звіт: завершіть 2 семестри.");
         } else {
-            YearlyReport report = appState.system.endYear(completedYears);
-            SetSystemMessage(appState, BuildYearlyReportMessage(report));
+            const int evenSemester = (latestCompletedSemester % 2 == 0)
+                ? latestCompletedSemester
+                : (latestCompletedSemester - 1);
+
+            if (evenSemester < 2) {
+                SetSystemMessage(appState, "Річний звіт: потрібна пара семестрів (1+2, 3+4, ...).");
+            } else {
+                const int year = evenSemester / 2;
+                try {
+                    std::string reportFileName;
+                    YearlyReport report = appState.system.generateAndSaveYearlyReport(year, reportFileName);
+                    SetSystemMessage(appState, BuildYearlyReportMessage(report) + " Файл: " + reportFileName);
+                    RefreshSaves(appState);
+                } catch (const std::exception&) {
+                    SetSystemMessage(appState, "Річний звіт: помилка створення файлу у папці YearlyReports.");
+                }
+            }
         }
     }
 
