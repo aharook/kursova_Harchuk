@@ -80,12 +80,24 @@ double Subject::getCurrentScore() const {
 }
 
 bool Subject::isPassed() const {
-
     if (hasPendingBlockers()) return false;
+    bool hasRegularAssessments = false;
+    bool allRegularAssessmentsHaveGrades = true;
 
+    for (const Assessments* task : assessments) {
+        if (task->getType() != AssessmentType::REGULAR) {
+            continue;
+        }
 
-    if (!AssessmentPerformanceService::hasAnyRegularGrades(assessments)) return false;
+        hasRegularAssessments = true;
+        if (!task->hasGrades()) {
+            allRegularAssessmentsHaveGrades = false;
+            break;
+        }
+    }
 
+    if (!hasRegularAssessments) return true;
+    if (!allRegularAssessmentsHaveGrades) return false;
 
     double score = getCurrentScore();
     return GradePolicy::isPassingScore(getScale(), score);

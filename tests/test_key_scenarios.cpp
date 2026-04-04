@@ -2,6 +2,7 @@
 #include "subject.h"
 #include "assessments.h"
 #include "PriorityManager.h"
+#include "SemesterManager.h"
 
 TEST(KeyScenariosTest, PerfectStudentPassesEverything) {
     Subject math("Mathematics", 5, false);
@@ -78,4 +79,16 @@ TEST(KeyScenariosTest, StudentRetakesAndFixesPriority) {
     test->addGrade(20.0);
     pm.update(&history);
     EXPECT_EQ(pm.getPriorityForSubject(&history), 50);
+}
+
+TEST(KeyScenariosTest, SemesterCannotEndIfRegularScoreIsBelowThreshold) {
+    Gradebook gradebook;
+    Subject* math = new Subject("Math", 1, false);
+    Assessments* homework = AssessmentFactory::createRegular(ScaleType::TwelvePoint);
+    homework->addGrade(3.0);
+    math->addAssessment(homework);
+    gradebook.addSubject(math);
+
+    SemesterManager manager;
+    EXPECT_FALSE(manager.canEndSemester(gradebook));
 }

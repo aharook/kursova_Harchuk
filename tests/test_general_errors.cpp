@@ -16,6 +16,32 @@ TEST(GeneralErrorsTest, TaskInitializesAsNotPassed) {
     delete task;
 }
 
+TEST(GeneralErrorsTest, SubjectWithEmptyRegularGradesIsNotPassed) {
+    Subject subject("Test", 1, false);
+    Assessments* task = AssessmentFactory::createRegular(ScaleType::TwelvePoint);
+    subject.addAssessment(task);
+
+    EXPECT_FALSE(subject.isPassed());
+}
+
+TEST(GeneralErrorsTest, SubjectWithRegularGradesBelowThresholdIsNotPassed) {
+    Subject subject("Test", 1, false);
+    Assessments* task = AssessmentFactory::createRegular(ScaleType::TwelvePoint);
+    task->addGrade(3.0);
+    subject.addAssessment(task);
+
+    EXPECT_FALSE(subject.isPassed());
+}
+
+TEST(GeneralErrorsTest, SubjectWithRegularGradesAtThresholdIsPassed) {
+    Subject subject("Test", 1, false);
+    Assessments* task = AssessmentFactory::createRegular(ScaleType::TwelvePoint);
+    task->addGrade(4.0);
+    subject.addAssessment(task);
+
+    EXPECT_TRUE(subject.isPassed());
+}
+
 TEST(GeneralErrorsTest, SubjectInitializesWithNoPendingBlockers) {
     Subject subject("Test", 1, false);
     EXPECT_FALSE(subject.hasPendingBlockers());

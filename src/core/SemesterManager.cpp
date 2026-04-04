@@ -34,7 +34,13 @@ void SemesterManager::setCurrentSemester(int semester) {
 }
 
 bool SemesterManager::canEndSemester(const Gradebook& activeGradebook) const {
-    return !activeGradebook.hasPendingBlockers();
+    for (const Subject* subject : activeGradebook.getSubjects()) {
+        if (!subject->isPassed()) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void SemesterManager::transitionToNextSemester(Gradebook& activeGradebook, std::vector<Subject*>& archive) {

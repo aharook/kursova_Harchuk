@@ -13,12 +13,12 @@ class AnnualReportBuilder {
 public:
     YearlyReport generateReport(int year, const std::vector<Subject*>& allYearSubjects, GradeConverter& converter) {
         std::map<std::string, std::vector<Subject*>> groupedSubjects;
-        bool hasBlockers = false;
+        bool hasUnpassedSubjects = false;
 
         for (Subject* sub : allYearSubjects) {
             groupedSubjects[sub->getLinkId()].push_back(sub);
-            if (sub->hasPendingBlockers()) {
-                hasBlockers = true; 
+            if (!sub->isPassed()) {
+                hasUnpassedSubjects = true;
             }
         }
 
@@ -46,7 +46,7 @@ public:
             annualGPA = totalSum / subjectCount;
         }
 
-        bool canProceed = !hasBlockers; 
+        bool canProceed = !hasUnpassedSubjects; 
         
         return YearlyReport(year, finalResults, annualGPA, canProceed);
     }

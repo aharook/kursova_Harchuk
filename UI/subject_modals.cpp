@@ -15,7 +15,7 @@ void DrawAddSubjectModal(AppState& state) {
 
         ImGui::Spacing();
         ImGui::TextDisabled("Шкала оцінювання:");
-        const char* scaleTypes[] = { "100-бальна", "5-бальна", "10-бальна" };
+        const char* scaleTypes[] = { "100-бальна", "5-бальна", "10-бальна","12-бальна" };
         ImGui::SetNextItemWidth(200);
         ImGui::Combo("##scale", &state.newSubjScale, scaleTypes, IM_ARRAYSIZE(scaleTypes));
 
@@ -29,7 +29,7 @@ void DrawAddSubjectModal(AppState& state) {
         ImGui::Checkbox("Екзамен##ex", &state.hasExam);
 
         ImGui::Spacing();
-        ImGui::Checkbox("Кастомний пріоритет", &state.hasCustomPriority);
+        ImGui::Checkbox("Користувацький пріоритет", &state.hasCustomPriority);
         if (state.hasCustomPriority) {
             ImGui::SameLine();
             const char* customPriorityOptions[] = { "100", "200", "300" };
