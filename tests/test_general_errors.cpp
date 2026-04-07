@@ -103,3 +103,38 @@ TEST(GeneralErrorsTest, AverageStrategyWithSingleElementReturnsElement) {
     std::vector<double> grades = {7.5};
     EXPECT_DOUBLE_EQ(avg.calculate(grades), 7.5);
 }
+
+TEST(GeneralErrorsTest, SaveGradesAppendsOnlyForRegular) {
+    Assessments* regular = AssessmentFactory::createRegular(ScaleType::Accumulative);
+    regular->saveGrades({10.0, 20.0}, true);
+    regular->saveGrades({15.0}, true);
+
+    const std::vector<double> grades = regular->getGrades();
+    ASSERT_EQ(grades.size(), 3u);
+    EXPECT_DOUBLE_EQ(grades[0], 10.0);
+    EXPECT_DOUBLE_EQ(grades[1], 20.0);
+    EXPECT_DOUBLE_EQ(grades[2], 15.0);
+    delete regular;
+}
+
+TEST(GeneralErrorsTest, SaveGradesReplacesForRegularWhenAppendDisabled) {
+    Assessments* regular = AssessmentFactory::createRegular(ScaleType::Accumulative);
+    regular->saveGrades({10.0, 20.0}, true);
+    regular->saveGrades({30.0}, false);
+
+    const std::vector<double> grades = regular->getGrades();
+    ASSERT_EQ(grades.size(), 1u);
+    EXPECT_DOUBLE_EQ(grades[0], 30.0);
+    delete regular;
+}
+
+TEST(GeneralErrorsTest, SaveGradesAlwaysReplacesForSingleGradeTypes) {
+    Assessments* exam = AssessmentFactory::createExam(ScaleType::TwelvePoint);
+    exam->saveGrades({7.0}, true);
+    exam->saveGrades({11.0}, true);
+
+    const std::vector<double> grades = exam->getGrades();
+    ASSERT_EQ(grades.size(), 1u);
+    EXPECT_DOUBLE_EQ(grades[0], 11.0);
+    delete exam;
+}

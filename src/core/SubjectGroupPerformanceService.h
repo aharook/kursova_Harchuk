@@ -4,6 +4,7 @@
 #include <vector>
 #include "subject.h"
 #include "AssessmentPerformanceService.h"
+#include "averageCalculation.h"
 
 class SubjectGroupPerformanceService {
 public:
@@ -20,7 +21,7 @@ public:
     }
 
     static double calculateRegularScore(const std::vector<Subject*>& subjects) {
-        std::vector<double> scores;
+        std::vector<double> mergedRegularGrades;
         ScaleType scale = ScaleType::TwelvePoint;
         bool hasRegularScale = false;
 
@@ -36,16 +37,17 @@ public:
                     hasRegularScale = true;
                 }
 
-                scores.push_back(task->getCurrentScore());
+                const std::vector<double> grades = task->getGrades();
+                mergedRegularGrades.insert(mergedRegularGrades.end(), grades.begin(), grades.end());
             }
         }
 
-        if (scores.empty()) {
+        if (mergedRegularGrades.empty()) {
             return 0.0;
         }
 
         ICalculationStrategy* strategy = StrategyFactory::createStrategy(hasRegularScale ? scale : ScaleType::TwelvePoint);
-        const double result = strategy->calculate(scores);
+        const double result = strategy->calculate(mergedRegularGrades);
         delete strategy;
         return result;
     }

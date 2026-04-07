@@ -24,6 +24,24 @@ void Assessments::clearGrades() {
     Grades.clear();
 }
 
+void Assessments::saveGrades(const std::vector<double>& newGrades, bool appendIfRegular) {
+    if (newGrades.empty()) {
+        return;
+    }
+
+    const bool canAppend = (Type == AssessmentType::REGULAR) && appendIfRegular;
+    if (!canAppend) {
+        Grades.clear();
+    }
+
+    if (Type == AssessmentType::REGULAR) {
+        Grades.insert(Grades.end(), newGrades.begin(), newGrades.end());
+        return;
+    }
+
+    Grades.push_back(newGrades.back());
+}
+
 void Assessments::addGrade(double newGrade) { Grades.push_back(newGrade); }
 
 double Assessments::getCurrentScore() const {

@@ -34,6 +34,9 @@ struct AppState {
     bool hasCoursework = false;
     bool hasPractice = false;
     bool hasExam = false;
+    bool newSubjIsMultiSemester = false;
+
+    bool overwriteGradesOnSave = false;
 
     bool showGradeError = false;
     char gradeErrorMessage[256] = "";

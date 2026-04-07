@@ -3,6 +3,7 @@
 #include "assessments.h"
 #include "PriorityManager.h"
 #include "SemesterManager.h"
+#include "SubjectGroupPerformanceService.h"
 
 TEST(KeyScenariosTest, PerfectStudentPassesEverything) {
     Subject math("Mathematics", 5, false);
@@ -91,4 +92,53 @@ TEST(KeyScenariosTest, SemesterCannotEndIfRegularScoreIsBelowThreshold) {
 
     SemesterManager manager;
     EXPECT_FALSE(manager.canEndSemester(gradebook));
+}
+
+TEST(KeyScenariosTest, MultiSemesterSubjectCarriesOnlyToNextSemester) {
+    Gradebook gradebook;
+    std::vector<Subject*> archive;
+
+    Subject* multi = new Subject("Algorithms", 1, true);
+    Assessments* regular = AssessmentFactory::createRegular(ScaleType::Accumulative);
+    regular->addGrade(60.0);
+    multi->addAssessment(regular);
+    gradebook.addSubject(multi);
+
+    SemesterManager manager;
+    manager.transitionToNextSemester(gradebook, archive);
+
+    ASSERT_EQ(manager.getCurrentSemester(), 2);
+    ASSERT_EQ(gradebook.getSubjects().size(), 1u);
+    Subject* carried = gradebook.getSubjects().front();
+    EXPECT_EQ(carried->Getname(), "Algorithms");
+    EXPECT_FALSE(carried->getIsMultiSemester());
+    ASSERT_EQ(carried->GetAssessments().size(), 1u);
+    EXPECT_TRUE(carried->GetAssessments().front()->getGrades().empty());
+
+    carried->GetAssessments().front()->addGrade(70.0);
+    manager.transitionToNextSemester(gradebook, archive);
+
+    EXPECT_EQ(manager.getCurrentSemester(), 3);
+    EXPECT_TRUE(gradebook.getSubjects().empty());
+
+    for (Subject* sub : archive) {
+        delete sub;
+    }
+}
+
+TEST(KeyScenariosTest, YearlyAggregationMergesRegularGradeArraysForMultiSemesterSubject) {
+    Subject firstPart("Databases", 1, true);
+    Assessments* regularFirst = AssessmentFactory::createRegular(ScaleType::TwelvePoint);
+    regularFirst->saveGrades({10.0, 8.0}, true);
+    firstPart.addAssessment(regularFirst);
+
+    Subject secondPart("Databases", 2, false, firstPart.getLinkId());
+    Assessments* regularSecond = AssessmentFactory::createRegular(ScaleType::TwelvePoint);
+    regularSecond->saveGrades({12.0}, true);
+    secondPart.addAssessment(regularSecond);
+
+    const std::vector<Subject*> parts = { &firstPart, &secondPart };
+    const double score = SubjectGroupPerformanceService::calculateRegularScore(parts);
+
+    EXPECT_DOUBLE_EQ(score, 10.0);
 }

@@ -37,6 +37,8 @@ void DrawAddSubjectModal(AppState& state) {
             ImGui::Combo("##priority", &state.customPriorityIndex, customPriorityOptions, IM_ARRAYSIZE(customPriorityOptions));
         }
 
+        ImGui::Checkbox("Мультисеместр (перенести на наступний семестр)", &state.newSubjIsMultiSemester);
+
         ImGui::Spacing();
         ImGui::Separator();
 
@@ -58,7 +60,7 @@ void DrawAddSubjectModal(AppState& state) {
         ImGui::Spacing();
         ImGui::BeginDisabled(!canSave);
         if (ImGui::Button("Створити", ImVec2(100, 0))) {
-            Subject* newSubj = new Subject(std::string(state.newSubjName), state.system.getCurrentSemester(), false);
+            Subject* newSubj = new Subject(std::string(state.newSubjName), state.system.getCurrentSemester(), state.newSubjIsMultiSemester);
 
             ScaleType scale = ScaleType::Accumulative;
             if (state.newSubjScale == 1) scale = ScaleType::FivePoint;
@@ -81,6 +83,7 @@ void DrawAddSubjectModal(AppState& state) {
             state.hasCustomPriority = false;
             state.customPriorityIndex = 0;
             state.hasRegular = true; state.hasCoursework = false; state.hasPractice = false; state.hasExam = true;
+            state.newSubjIsMultiSemester = false;
 
             ImGui::CloseCurrentPopup();
         }

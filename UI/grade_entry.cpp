@@ -21,6 +21,7 @@ void DrawAddGradeModal(AppState& state) {
         memset(state.newGradesBuffer, 0, sizeof(state.newGradesBuffer));
         state.showGradeError = false;  
         strcpy(state.gradeErrorMessage, "");
+        state.overwriteGradesOnSave = false;
     }
 
     if (ImGui::BeginPopupModal("Введення оцінки", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -31,9 +32,10 @@ void DrawAddGradeModal(AppState& state) {
 
         if (isSingleGrade) {
             ImGui::Text("Введіть ОДНУ оцінку (максимум %d):", maxLimit);
-            ImGui::TextDisabled("Якщо оцінка вже є, вона буде перезаписана.");
+            ImGui::TextDisabled("Для цього типу нова оцінка замінює попередню.");
         } else {
             ImGui::Text("Введіть бали через пробіл (максимум %d):", maxLimit);
+            ImGui::Checkbox("Перезаписати існуючі оцінки", &state.overwriteGradesOnSave);
         }
         ImGui::InputText("##grade", state.newGradesBuffer, IM_ARRAYSIZE(state.newGradesBuffer), ImGuiInputTextFlags_CallbackCharFilter, GradeInputFilter);
 
@@ -76,12 +78,12 @@ void DrawAddGradeModal(AppState& state) {
                 strcpy(state.gradeErrorMessage, "Помилка: сюди можна ввести лише 1 оцінку!");
             } else {
                 if (state.selectedAssessmentForGrade != nullptr) {
-                    if (isSingleGrade) {
-                        state.selectedAssessmentForGrade->clearGrades();
-                    }
+                    std::vector<double> gradesToSave;
+                    gradesToSave.reserve(parsedGrades.size());
                     for (int g : parsedGrades) {
-                        state.selectedAssessmentForGrade->addGrade(static_cast<double>(g));
+                        gradesToSave.push_back(static_cast<double>(g));
                     }
+                    state.selectedAssessmentForGrade->saveGrades(gradesToSave, !state.overwriteGradesOnSave);
                 }
                 ImGui::CloseCurrentPopup();
             }

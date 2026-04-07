@@ -36,6 +36,7 @@ public:
 
     double getMaxAllowedGrade() const;
     void clearGrades();
+    void saveGrades(const std::vector<double>& newGrades, bool appendIfRegular);
 
     void addGrade(double newGrade);
     double getCurrentScore() const;

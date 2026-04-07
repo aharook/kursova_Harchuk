@@ -54,7 +54,7 @@ void SemesterManager::transitionToNextSemester(Gradebook& activeGradebook, std::
             Subject* continuationSubject = new Subject(
                 sub->Getname(),
                 currentSemester + 1,
-                true,
+                false,
                 sub->getLinkId() 
             );
 
