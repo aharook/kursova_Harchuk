@@ -19,6 +19,10 @@ add_executable(${PROJECT_NAME}
     UI/grade_entry.cpp
     UI/subject_modals.cpp
     UI/dashboard_parts.cpp
+    UI/dashboard_top_panel.cpp
+    UI/dashboard_subjects_list.cpp
+    UI/dashboard_subject_details.cpp
+    UI/dashboard_semester_overview.cpp
     ${CORE_SOURCES}
 )
 

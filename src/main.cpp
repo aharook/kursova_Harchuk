@@ -28,11 +28,7 @@ int main() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     
     ImFont* font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\arial.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesCyrillic());
-    if (font == nullptr) {
-        std::cerr << "Не вдалося завантажити шрифт Arial" << std::endl;
-    }
 
-    // 1. Вмикаємо світлу тему інтерфейсу за замовчуванням
     ImGui::StyleColorsLight();
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -46,7 +42,6 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // Переключаємо тему якщо потрібно
         if (appState.isDarkTheme) {
             ImGui::StyleColorsDark();
         } else {
@@ -60,7 +55,6 @@ int main() {
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
         
-        // 2. Встановлюємо чисто білий задній фон
         glClearColor(1.00f, 1.00f, 1.00f, 1.00f);
         glClear(GL_COLOR_BUFFER_BIT);
         
@@ -74,5 +68,4 @@ int main() {
     glfwDestroyWindow(window);
     glfwTerminate();
 
-    return 0;
 }
