@@ -2,7 +2,6 @@
 #define GRADEPOLICY_H
 
 #include <array>
-
 #include "assessments.h"
 
 class GradePolicy {

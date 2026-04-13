@@ -14,10 +14,15 @@ class GradeConverter {
 private:
     std::vector<ConversionRule> rules;
 
-    void loadMappings(const std::string& filename) {
+    bool loadMappings(const std::string& filename) {
+        rules.clear();
         std::ifstream file(filename);
+        if (!file.is_open()) {
+            return false;
+        }
+
         std::string line;
-        std::getline(file, line); 
+        std::getline(file, line);
 
         while (std::getline(file, line)) {
             if (line.empty()) continue;
@@ -25,23 +30,31 @@ private:
             std::stringstream ss(line);
             std::string cell;
             double v100 = 0, v5 = 0, v10 = 0, v12 = 0;
+            try {
                 if (std::getline(ss, cell, ',')) v100 = std::stod(cell);
                 if (std::getline(ss, cell, ',')) v5 = std::stod(cell);
                 if (std::getline(ss, cell, ',')) v10 = std::stod(cell);
                 if (std::getline(ss, cell, ',')) v12 = std::stod(cell);
+            } catch (...) {
+                continue;
+            }
 
-                ConversionRule rule;
-                rule.addValue(ScaleType::Accumulative, v100); 
-                rule.addValue(ScaleType::FivePoint, v5);
-                rule.addValue(ScaleType::TenPoint, v10);
-                rule.addValue(ScaleType::TwelvePoint, v12);
-                
-                rules.push_back(rule); 
+            ConversionRule rule;
+            rule.addValue(ScaleType::Accumulative, v100);
+            rule.addValue(ScaleType::FivePoint, v5);
+            rule.addValue(ScaleType::TenPoint, v10);
+            rule.addValue(ScaleType::TwelvePoint, v12);
+
+            rules.push_back(rule);
         }
+
+        return !rules.empty();
     }
 public:
-    GradeConverter(const std::string& filename = "d:/Rcit/kursova_Harchuk/data/scales.csv") {
-        loadMappings(filename);
+    GradeConverter(const std::string& filename = "data/scales.csv") {
+        if (!loadMappings(filename) && filename != "scales.csv") {
+            loadMappings("scales.csv");
+        }
     }
     double convert(double grade, ScaleType fromScale, ScaleType toScale) const {
         if (fromScale == toScale) return grade;

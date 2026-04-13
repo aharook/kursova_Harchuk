@@ -97,19 +97,6 @@ bool OpenYearlyReportsFolder(std::string& errorMessage) {
     }
 }
 
-std::string BuildYearlyReportMessage(const YearlyReport& report) {
-    char buffer[256] = {};
-    std::snprintf(
-        buffer,
-        sizeof(buffer),
-        "Річний звіт за %d рік сформовано. GPA: %.2f. Статус: %s.",
-        report.getAcademicYear(),
-        report.getAnnualGPA(),
-        report.getCanProceed() ? "перехід дозволено" : "є борги"
-    );
-    return std::string(buffer);
-}
-
 const Assessments* FindAssessmentByType(const Subject* subject, AssessmentType type) {
     if (subject == nullptr) {
         return nullptr;
@@ -136,7 +123,7 @@ void DrawAssessmentScoreCell(
         return;
     }
 
-    const double convertedScore = appState.uiConverter.convert(
+    const double convertedScore = appState.system.convertGrade(
         assessment->getCurrentScore(),
         assessment->getScale(),
         targetScale

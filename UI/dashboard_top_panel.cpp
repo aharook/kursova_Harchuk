@@ -2,7 +2,6 @@
 #include "imgui.h"
 #include <algorithm>
 #include <string>
-#include <exception>
 
 namespace UI {
 namespace DashboardParts {
@@ -107,27 +106,11 @@ bool DrawTopPanel(AppState& appState) {
 
     ImGui::SameLine();
     if (ImGui::Button("Закінчити рік", ImVec2(140, 28))) {
-        const int latestCompletedSemester = appState.system.getCurrentSemester() - 1;
-        if (latestCompletedSemester < 2) {
-            Detail::SetSystemMessage(appState, "Річний звіт: завершіть 2 семестри.");
-        } else {
-            const int evenSemester = (latestCompletedSemester % 2 == 0)
-                ? latestCompletedSemester
-                : (latestCompletedSemester - 1);
-
-            if (evenSemester < 2) {
-                Detail::SetSystemMessage(appState, "Річний звіт: потрібна пара семестрів (1+2, 3+4, ...).");
-            } else {
-                const int year = evenSemester / 2;
-                try {
-                    std::string reportFileName;
-                    YearlyReport report = appState.system.generateAndSaveYearlyReport(year, reportFileName);
-                    Detail::SetSystemMessage(appState, Detail::BuildYearlyReportMessage(report) + " Файл: " + reportFileName);
-                    Detail::RefreshSaves(appState);
-                } catch (const std::exception&) {
-                    Detail::SetSystemMessage(appState, "Річний звіт: помилка створення файлу у папці YearlyReports.");
-                }
-            }
+        std::string statusMessage;
+        const bool reportCreated = appState.system.tryGenerateLatestYearlyReport(statusMessage);
+        Detail::SetSystemMessage(appState, statusMessage);
+        if (reportCreated) {
+            Detail::RefreshSaves(appState);
         }
     }
 

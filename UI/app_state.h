@@ -5,13 +5,10 @@
 #include <string>
 #include "AcademicSystem.h" 
 #include "PriorityManager.h"
-#include "GradeConverter.h"
 
 struct AppState {
     AcademicSystem system; 
     PriorityManager pm;
-    
-    GradeConverter uiConverter{"d:/Rcit/kursova_Harchuk/data/scales.csv"};
 
     Subject* selectedSubject = nullptr;
     Assessments* selectedAssessmentForGrade = nullptr;

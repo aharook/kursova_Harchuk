@@ -14,7 +14,6 @@ std::string BuildSemesterSaveName(int currentSemester);
 void RefreshSaves(AppState& appState);
 void SetSystemMessage(AppState& appState, const std::string& message);
 bool OpenYearlyReportsFolder(std::string& errorMessage);
-std::string BuildYearlyReportMessage(const YearlyReport& report);
 const Assessments* FindAssessmentByType(const Subject* subject, AssessmentType type);
 void DrawAssessmentScoreCell(AppState& appState, const Subject* subject, AssessmentType type, ScaleType targetScale);
 

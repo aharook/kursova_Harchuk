@@ -1,6 +1,5 @@
 #include "dashboard_parts_internal.h"
 #include "imgui.h"
-#include <map>
 #include <string>
 #include <vector>
 
@@ -23,8 +22,6 @@ void DrawSemesterOverview(AppState& appState, const std::vector<Subject*>& sorte
     ImGui::Combo("##displayScale", &appState.selectedDisplayScale, displayScales, 3);
     ImGui::Spacing();
 
-    std::map<std::string, double> actualAverages = appState.system.getGradebook().getActualAverages();
-
     if (ImGui::BeginTable("StandardSubjects", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
         ImGui::TableSetupColumn("Предмет");
         ImGui::TableSetupColumn("Підсумкова оцінка");
@@ -35,7 +32,7 @@ void DrawSemesterOverview(AppState& appState, const std::vector<Subject*>& sorte
         ImGui::TableHeadersRow();
 
         for (Subject* sub : sortedSubjects) {
-            ScaleType nativeScale = appState.system.getGradebook().getSubjectScale(sub->getLinkId());
+            ScaleType nativeScale = sub->getScale();
             if (nativeScale == ScaleType::Accumulative) {
                 continue;
             }
@@ -46,7 +43,7 @@ void DrawSemesterOverview(AppState& appState, const std::vector<Subject*>& sorte
 
             ImGui::TableSetColumnIndex(1);
 
-            double nativeScore = actualAverages[sub->getLinkId()];
+            double nativeScore = sub->getCurrentScore();
 
             ScaleType targetScale = ScaleType::TwelvePoint;
             std::string scaleSuffix = " (12-бальна)";
@@ -59,7 +56,7 @@ void DrawSemesterOverview(AppState& appState, const std::vector<Subject*>& sorte
                 scaleSuffix = " (10-бальна)";
             }
 
-            double convertedScore = appState.uiConverter.convert(nativeScore, nativeScale, targetScale);
+            double convertedScore = appState.system.convertGrade(nativeScore, nativeScale, targetScale);
             ImGui::Text("%.1f%s", convertedScore, scaleSuffix.c_str());
 
             ImGui::TableSetColumnIndex(2);
@@ -99,7 +96,7 @@ void DrawSemesterOverview(AppState& appState, const std::vector<Subject*>& sorte
         ImGui::TableHeadersRow();
 
         for (Subject* sub : sortedSubjects) {
-            ScaleType nativeScale = appState.system.getGradebook().getSubjectScale(sub->getLinkId());
+            ScaleType nativeScale = sub->getScale();
             if (nativeScale != ScaleType::Accumulative) {
                 continue;
             }
@@ -109,7 +106,7 @@ void DrawSemesterOverview(AppState& appState, const std::vector<Subject*>& sorte
             ImGui::Text("%s", sub->Getname().c_str());
 
             ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%.1f / 100.0", actualAverages[sub->getLinkId()]);
+            ImGui::Text("%.1f / 100.0", sub->getCurrentScore());
 
             ImGui::TableSetColumnIndex(2);
             Detail::DrawAssessmentScoreCell(appState, sub, AssessmentType::EXAM, ScaleType::Accumulative);
@@ -148,29 +145,8 @@ void DrawSemesterOverview(AppState& appState, const std::vector<Subject*>& sorte
                 targetScale = ScaleType::TenPoint;
             }
 
-            double totalScore = 0.0;
             int includedSubjects = 0;
-            for (Subject* sub : sortedSubjects) {
-                bool hasRegularGrades = false;
-                const auto& assessments = sub->GetAssessments();
-                for (const Assessments* task : assessments) {
-                    if (task->getType() == AssessmentType::REGULAR && task->hasGrades()) {
-                        hasRegularGrades = true;
-                        break;
-                    }
-                }
-
-                if (!hasRegularGrades) {
-                    continue;
-                }
-
-                ScaleType nativeScale = appState.system.getGradebook().getSubjectScale(sub->getLinkId());
-                double convertedScore = appState.uiConverter.convert(actualAverages[sub->getLinkId()], nativeScale, targetScale);
-                totalScore += convertedScore;
-                includedSubjects++;
-            }
-
-            double averageScore = (includedSubjects > 0) ? (totalScore / includedSubjects) : 0.0;
+            const double averageScore = appState.system.calculateCurrentSemesterAverage(targetScale, includedSubjects);
 
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 1.0f, 0.2f, 1.0f));
             ImGui::Text(" Семестр успішно закрито!");

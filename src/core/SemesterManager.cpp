@@ -21,7 +21,7 @@ Assessments* cloneAssessmentTemplate(const Assessments* source) {
     }
 }
 
-} // namespace
+}
 
 SemesterManager::SemesterManager() : currentSemester(1) {}
 
