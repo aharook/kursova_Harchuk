@@ -7,7 +7,7 @@ namespace UI {
 namespace DashboardParts {
 
 void DrawSemesterOverview(AppState& appState, const std::vector<Subject*>& sortedSubjects, bool hasDebts) {
-    ImGui::TextDisabled("ЗАГАЛЬНА СТАТИСТИКА ПО СЕМЕСТРУ (Оберіть предмет зліва для деталей)");
+    ImGui::TextDisabled("ЗАГАЛЬНА СТАТИСТИКА ПО СЕМЕСТРУ");
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
