@@ -1,24 +1,29 @@
 #include "SemesterManager.h"
 #include "assessments.h"
+#include <map>
 
 namespace {
+
+using AssessmentCreator = Assessments* (*)(ScaleType);
+
+const std::map<AssessmentType, AssessmentCreator> kAssessmentCreators = {
+    {AssessmentType::EXAM, AssessmentFactory::createExam},
+    {AssessmentType::COURSEWORK, AssessmentFactory::createCoursework},
+    {AssessmentType::PRACTICE, AssessmentFactory::createPractice},
+    {AssessmentType::REGULAR, AssessmentFactory::createRegular}
+};
 
 Assessments* cloneAssessmentTemplate(const Assessments* source) {
     if (source == nullptr) {
         return nullptr;
     }
 
-    switch (source->getType()) {
-        case AssessmentType::EXAM:
-            return AssessmentFactory::createExam(source->getScale());
-        case AssessmentType::COURSEWORK:
-            return AssessmentFactory::createCoursework(source->getScale());
-        case AssessmentType::PRACTICE:
-            return AssessmentFactory::createPractice(source->getScale());
-        case AssessmentType::REGULAR:
-        default:
-            return AssessmentFactory::createRegular(source->getScale());
+    const auto it = kAssessmentCreators.find(source->getType());
+    if (it != kAssessmentCreators.end()) {
+        return it->second(source->getScale());
     }
+
+    return AssessmentFactory::createRegular(source->getScale());
 }
 
 }
