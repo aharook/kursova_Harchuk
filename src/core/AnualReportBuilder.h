@@ -6,12 +6,12 @@
 #include <string>
 #include "YearlyReport.h"
 #include "subject.h"
-#include "GradeConverter.h" 
+#include "AcademicPorts.h"
 #include "SubjectGroupPerformanceService.h"
 
 class AnnualReportBuilder {
 public:
-    YearlyReport generateReport(int year, const std::vector<Subject*>& allYearSubjects, GradeConverter& converter) {
+    YearlyReport generateReport(int year, const std::vector<Subject*>& allYearSubjects, const IGradeConverter& converter) {
         std::map<std::string, std::vector<Subject*>> groupedSubjects;
         bool hasUnpassedSubjects = false;
 

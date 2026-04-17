@@ -3,7 +3,6 @@
 
 #include <vector>
 #include "subject.h"
-#include "AssessmentPerformanceService.h"
 #include "averageCalculation.h"
 
 class SubjectGroupPerformanceService {

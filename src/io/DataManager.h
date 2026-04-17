@@ -8,8 +8,9 @@
 #include "Gradebook.h"
 #include "subject.h"
 #include "assessments.h"
+#include "AcademicPorts.h"
 
-class DataManager {
+class DataManager : public ISystemStateRepository {
 private:
     std::string saveDirectory;
     void ensureDirectoryExists() const;
@@ -22,17 +23,17 @@ public:
         const std::vector<Subject*>& archivedSubjects,
         int currentSemester,
         const std::string& filename
-    ) const;
+    ) const override;
     
     bool loadCurrentProgress(
         Gradebook& gradebook,
         std::vector<Subject*>& archivedSubjects,
         int& currentSemester,
         const std::string& filename
-    ) const;
+    ) const override;
 
-    std::vector<std::string> getListOfSaves() const;
-    std::string getLatestSaveFileName() const;
+    std::vector<std::string> getListOfSaves() const override;
+    std::string getLatestSaveFileName() const override;
 };
 
 #endif

@@ -49,15 +49,6 @@ public:
         return false;
     }
 
-    static bool hasAnyRegularGrades(const std::vector<Assessments*>& assessments) {
-        for (const Assessments* task : assessments) {
-            if (task->getType() == AssessmentType::REGULAR && task->hasGrades()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     static int getPriorityScore(const std::vector<Assessments*>& assessments) {
         int totalPriority = 0;
         for (const Assessments* task : assessments) {

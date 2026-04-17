@@ -2,6 +2,36 @@
 #include "imgui.h"
 #include <algorithm>
 #include <string>
+#include <cstdio>
+
+namespace {
+
+std::string BuildYearlyReportMessage(const AcademicSystem::YearlyReportGenerationResult& result) {
+    switch (result.status) {
+    case AcademicSystem::YearlyReportGenerationResult::Status::Success: {
+        char buffer[256] = {};
+        std::snprintf(
+            buffer,
+            sizeof(buffer),
+            "Річний звіт за %d рік сформовано. GPA: %.2f. Статус: %s. Файл: %s",
+            result.year,
+            result.gpa,
+            result.canProceed ? "перехід дозволено" : "є борги",
+            result.fileName.c_str()
+        );
+        return buffer;
+    }
+    case AcademicSystem::YearlyReportGenerationResult::Status::NotEnoughCompletedSemesters:
+        return "Річний звіт: завершіть 2 семестри.";
+    case AcademicSystem::YearlyReportGenerationResult::Status::MissingSemesterPair:
+        return "Річний звіт: потрібна пара семестрів (1+2, 3+4, ...).";
+    case AcademicSystem::YearlyReportGenerationResult::Status::SaveFailed:
+    default:
+        return "Річний звіт: помилка створення файлу у папці YearlyReports.";
+    }
+}
+
+}
 
 namespace UI {
 namespace DashboardParts {
@@ -106,9 +136,9 @@ bool DrawTopPanel(AppState& appState) {
 
     ImGui::SameLine();
     if (ImGui::Button("Закінчити рік", ImVec2(140, 28))) {
-        std::string statusMessage;
-        const bool reportCreated = appState.system.tryGenerateLatestYearlyReport(statusMessage);
-        Detail::SetSystemMessage(appState, statusMessage);
+        AcademicSystem::YearlyReportGenerationResult result;
+        const bool reportCreated = appState.system.tryGenerateLatestYearlyReport(result);
+        Detail::SetSystemMessage(appState, BuildYearlyReportMessage(result));
         if (reportCreated) {
             Detail::RefreshSaves(appState);
         }

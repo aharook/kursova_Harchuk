@@ -9,8 +9,9 @@
 #include <cmath>
 #include "ConversionRule.h"
 #include "assessments.h"
+#include "AcademicPorts.h"
 
-class GradeConverter {
+class GradeConverter : public IGradeConverter {
 private:
     std::vector<ConversionRule> rules;
 
@@ -56,7 +57,7 @@ public:
             loadMappings("scales.csv");
         }
     }
-    double convert(double grade, ScaleType fromScale, ScaleType toScale) const {
+    double convert(double grade, ScaleType fromScale, ScaleType toScale) const override {
         if (fromScale == toScale) return grade;
         
         if (rules.empty()){ return grade;} 

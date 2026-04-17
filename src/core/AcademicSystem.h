@@ -4,26 +4,51 @@
 #include "Gradebook.h"
 #include "SemesterManager.h"
 #include "AnualReportBuilder.h"
+#include "AcademicPorts.h"
 #include "GradeConverter.h"
 #include "DataManager.h"
 #include "YearlyReport.h"
 #include "YearlyReportSaver.h"
-#include <cstdio>
 #include <string>
 #include <vector>
 #include <stdexcept>
 
 class AcademicSystem {
+public:
+    struct YearlyReportGenerationResult {
+        enum class Status {
+            Success,
+            NotEnoughCompletedSemesters,
+            MissingSemesterPair,
+            SaveFailed
+        };
+
+        Status status = Status::NotEnoughCompletedSemesters;
+        int year = 0;
+        double gpa = 0.0;
+        bool canProceed = false;
+        std::string fileName;
+    };
+
 private:
     Gradebook gradebook;
     SemesterManager semesterManager; 
-    GradeConverter converter;
-    DataManager dataManager;
+    GradeConverter defaultConverter;
+    DataManager defaultRepository;
+    IGradeConverter& converter;
+    ISystemStateRepository& dataManager;
     AnnualReportBuilder reportBuilder;
     std::vector<Subject*> archivedSubjects; 
 
 public:
-    AcademicSystem() : converter("data/scales.csv") {
+    AcademicSystem(
+        IGradeConverter* converterPort = nullptr,
+        ISystemStateRepository* repositoryPort = nullptr
+    )
+        : defaultConverter("data/scales.csv")
+        , defaultRepository()
+        , converter((converterPort != nullptr) ? *converterPort : static_cast<IGradeConverter&>(defaultConverter))
+        , dataManager((repositoryPort != nullptr) ? *repositoryPort : static_cast<ISystemStateRepository&>(defaultRepository)) {
         const std::string latestSave = dataManager.getLatestSaveFileName();
         if (!latestSave.empty()) {
             loadSystemState(latestSave);
@@ -126,10 +151,14 @@ public:
         return (includedSubjects > 0) ? (totalScore / includedSubjects) : 0.0;
     }
 
-    bool tryGenerateLatestYearlyReport(std::string& statusMessage) {
+    bool tryGenerateLatestYearlyReport(YearlyReportGenerationResult& result) {
+        result = YearlyReportGenerationResult{};
+
         const int year = getLatestReportableYear();
+        result.year = year;
+
         if (year <= 0) {
-            statusMessage = "Річний звіт: завершіть 2 семестри.";
+            result.status = YearlyReportGenerationResult::Status::NotEnoughCompletedSemesters;
             return false;
         }
 
@@ -148,7 +177,7 @@ public:
         }
 
         if (!hasFirstSemester || !hasSecondSemester) {
-            statusMessage = "Річний звіт: потрібна пара семестрів (1+2, 3+4, ...).";
+            result.status = YearlyReportGenerationResult::Status::MissingSemesterPair;
             return false;
         }
 
@@ -156,37 +185,21 @@ public:
             std::string reportFileName;
             YearlyReport report = generateAndSaveYearlyReport(year, reportFileName);
 
-            char buffer[256] = {};
-            std::snprintf(
-                buffer,
-                sizeof(buffer),
-                "Річний звіт за %d рік сформовано. GPA: %.2f. Статус: %s.",
-                report.getAcademicYear(),
-                report.getAnnualGPA(),
-                report.getCanProceed() ? "перехід дозволено" : "є борги"
-            );
-
-            statusMessage = std::string(buffer) + " Файл: " + reportFileName;
+            result.status = YearlyReportGenerationResult::Status::Success;
+            result.year = report.getAcademicYear();
+            result.gpa = report.getAnnualGPA();
+            result.canProceed = report.getCanProceed();
+            result.fileName = reportFileName;
             return true;
         } catch (const std::exception&) {
-            statusMessage = "Річний звіт: помилка створення файлу у папці YearlyReports.";
+            result.status = YearlyReportGenerationResult::Status::SaveFailed;
             return false;
         }
     }
 
     YearlyReport endYear(int year) {
-        if (year <= 0) {
-            throw std::invalid_argument("Academic year must be positive.");
-        }
-
         const int firstSemesterOfYear = year * 2 - 1;
         const int secondSemesterOfYear = year * 2;
-
-        const int latestReportYear = getLatestReportableYear();
-
-        if (year != latestReportYear) {
-            throw std::logic_error("Yearly report can be built only for the latest completed semester pair.");
-        }
 
         std::vector<Subject*> yearSubjects;
         yearSubjects.reserve(archivedSubjects.size());
@@ -206,11 +219,6 @@ public:
                 }
             }
         }
-
-        if (!hasFirstSemester || !hasSecondSemester) {
-            throw std::logic_error("Yearly report requires both semesters in the pair.");
-        }
-
         return reportBuilder.generateReport(year, yearSubjects, converter);
     }
 
