@@ -2,6 +2,7 @@
 #define YEARLYREPORTSAVER_H
 
 #include "YearlyReport.h"
+#include "AcademicPorts.h"
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -98,6 +99,13 @@ public:
         outFile << "</Workbook>\n";
 
         return fileName;
+    }
+};
+
+class FileYearlyReportSaver final : public IYearlyReportSaver {
+public:
+    std::string saveYearlyReport(const YearlyReport& report, int year) const override {
+        return YearlyReportSaver::save(report, year);
     }
 };
 

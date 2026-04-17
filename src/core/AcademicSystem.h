@@ -35,20 +35,25 @@ private:
     SemesterManager semesterManager; 
     GradeConverter defaultConverter;
     DataManager defaultRepository;
+    FileYearlyReportSaver defaultYearlyReportSaver;
     IGradeConverter& converter;
     ISystemStateRepository& dataManager;
+    IYearlyReportSaver& yearlyReportSaver;
     AnnualReportBuilder reportBuilder;
     std::vector<Subject*> archivedSubjects; 
 
 public:
     AcademicSystem(
         IGradeConverter* converterPort = nullptr,
-        ISystemStateRepository* repositoryPort = nullptr
+        ISystemStateRepository* repositoryPort = nullptr,
+        IYearlyReportSaver* yearlyReportSaverPort = nullptr
     )
         : defaultConverter("data/scales.csv")
         , defaultRepository()
+        , defaultYearlyReportSaver()
         , converter((converterPort != nullptr) ? *converterPort : static_cast<IGradeConverter&>(defaultConverter))
-        , dataManager((repositoryPort != nullptr) ? *repositoryPort : static_cast<ISystemStateRepository&>(defaultRepository)) {
+        , dataManager((repositoryPort != nullptr) ? *repositoryPort : static_cast<ISystemStateRepository&>(defaultRepository))
+        , yearlyReportSaver((yearlyReportSaverPort != nullptr) ? *yearlyReportSaverPort : static_cast<IYearlyReportSaver&>(defaultYearlyReportSaver)) {
         const std::string latestSave = dataManager.getLatestSaveFileName();
         if (!latestSave.empty()) {
             loadSystemState(latestSave);
@@ -225,7 +230,7 @@ public:
     YearlyReport generateAndSaveYearlyReport(int year, std::string& savedFileName) {
         YearlyReport report = endYear(year);
 
-        savedFileName = YearlyReportSaver::save(report, year);
+        savedFileName = yearlyReportSaver.saveYearlyReport(report, year);
 
         return report;
     }

@@ -7,6 +7,7 @@
 
 class Gradebook;
 class Subject;
+class YearlyReport;
 
 class IGradeConverter {
 public:
@@ -34,6 +35,12 @@ public:
 
     virtual std::vector<std::string> getListOfSaves() const = 0;
     virtual std::string getLatestSaveFileName() const = 0;
+};
+
+class IYearlyReportSaver {
+public:
+    virtual ~IYearlyReportSaver() = default;
+    virtual std::string saveYearlyReport(const YearlyReport& report, int year) const = 0;
 };
 
 #endif
